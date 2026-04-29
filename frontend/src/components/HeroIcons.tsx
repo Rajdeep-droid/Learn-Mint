@@ -99,7 +99,7 @@ const SvgLightning = () => (
   </svg>
 );
 
-const ICONS: Omit<FloatingIconProps, "children">[] & { icon: React.ReactNode }[] = [
+const ICONS: (Omit<FloatingIconProps, "children"> & { icon: React.ReactNode })[] = [
   { icon: <SvgHex />,       dir: "left",  y: "10%", size: 95,  color: "#00E5FF", glow: "rgba(0,229,255,0.2)",  delay: 0,  duration: 26, rotate: 15 },
   { icon: <SvgCube />,      dir: "right", y: "25%", size: 55,  color: "#B388FF", glow: "rgba(179,136,255,0.1)", delay: 2,  duration: 30, rotate: -12 },
   { icon: <SvgToken />,     dir: "left",  y: "45%", size: 105, color: "#FFC400", glow: "rgba(255,196,0,0.2)",   delay: 4,  duration: 28, rotate: 22 },
