@@ -45,8 +45,8 @@ export function useWallet() {
 async function isFreighterInstalled(): Promise<boolean> {
   try {
     const { isConnected } = await import("@stellar/freighter-api");
-    const connected = await isConnected();
-    return connected;
+    const result = await isConnected();
+    return typeof result === "boolean" ? result : !!result?.isConnected;
   } catch (e) {
     console.error("Error checking Freighter installation:", e);
     return false;

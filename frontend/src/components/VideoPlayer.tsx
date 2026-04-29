@@ -1,18 +1,10 @@
 "use client";
 
-// ============================================================================
-// VIDEO PLAYER — 9:16 Aspect Ratio Media Player
-// ============================================================================
-// Features:
-//   - Strict 9:16 mobile-portrait aspect ratio
-//   - Glassmorphism lock overlay when course is locked
-//   - Custom controls: play/pause, progress bar, fullscreen
-//   - Depth-of-field ambient glow effect
-//   - Resumes playback from saved position
-// ============================================================================
-
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useVideoProgress } from "@/hooks/useVideoProgress";
+import { useWallet } from "@/context/WalletProvider";
+import { useToast } from "@/components/Toast";
+import ReactPlayer from "react-player";
 
 interface VideoPlayerProps {
   courseId: number;
@@ -22,318 +14,323 @@ interface VideoPlayerProps {
   isUnlocking?: boolean;
 }
 
+const CHAPTERS = [
+  { num: "01", title: "INTRO TO STELLAR", desc: "Overview of the Stellar ecosystem", done: true },
+  { num: "02", title: "ACCOUNTS & KEYS", desc: "Public keys, secret keys & keypairs", done: true },
+  { num: "03", title: "TRANSACTIONS", desc: "Building & submitting transactions", done: false, active: true },
+  { num: "04", title: "CONSENSUS", desc: "How SCP achieves agreement", done: false },
+  { num: "05", title: "SMART CONTRACTS", desc: "Introduction to on-chain logic", done: false },
+  { num: "06", title: "SOROBAN SDK", desc: "Write your first Soroban contract", done: false },
+];
+
+const CH_COLORS = [
+  { bg: "rgba(0,255,159,0.05)", border: "rgba(0,255,159,0.15)", accent: "var(--neon)" },
+  { bg: "rgba(0,229,255,0.05)", border: "rgba(0,229,255,0.15)", accent: "var(--cyan)" },
+  { bg: "rgba(179,136,255,0.05)", border: "rgba(179,136,255,0.15)", accent: "var(--purple)" },
+  { bg: "rgba(255,196,0,0.05)", border: "rgba(255,196,0,0.15)", accent: "var(--amber)" },
+  { bg: "rgba(59,130,246,0.05)", border: "rgba(59,130,246,0.15)", accent: "var(--blue)" },
+  { bg: "rgba(255,71,87,0.05)", border: "rgba(255,71,87,0.15)", accent: "var(--red)" },
+];
+
+const Player: any = ReactPlayer;
+
 export default function VideoPlayer({
-  courseId,
-  videoUrl,
-  isLocked,
-  onUnlock,
-  isUnlocking = false,
+  courseId, videoUrl, isLocked, onUnlock, isUnlocking = false,
 }: VideoPlayerProps) {
-  const { progress, attachVideo, onTimeUpdate, onEnded } =
-    useVideoProgress(courseId);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const { progress, attachVideo, onTimeUpdate, onEnded } = useVideoProgress(courseId);
+  const { isConnected } = useWallet();
+  const { showToast } = useToast();
+  const playerRef = useRef<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [showControls, setShowControls] = useState(true);
-  const controlsTimer = useRef<NodeJS.Timeout | null>(null);
-
-  const handleVideoRef = useCallback(
-    (el: HTMLVideoElement | null) => {
-      videoElementRef.current = el;
-      attachVideo(el);
-    },
-    [attachVideo]
-  );
+  const [showControls, setShowControls] = useState(false);
+  const [activeChapter, setActiveChapter] = useState(2);
 
   const togglePlay = useCallback(() => {
-    const video = videoElementRef.current;
-    if (!video) return;
-    if (video.paused) {
-      video.play();
-      setIsPlaying(true);
-    } else {
-      video.pause();
-      setIsPlaying(false);
-    }
+    setIsPlaying((prev) => !prev);
   }, []);
 
-  const handleTimeUpdate = useCallback(() => {
-    const video = videoElementRef.current;
-    if (!video) return;
-    setCurrentTime(video.currentTime);
-    setDuration(video.duration || 0);
-    onTimeUpdate();
-  }, [onTimeUpdate]);
-
-  const handleSeek = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const video = videoElementRef.current;
-      if (!video) return;
-      const time = parseFloat(e.target.value);
-      video.currentTime = time;
-      setCurrentTime(time);
-    },
-    []
-  );
-
-  const toggleFullscreen = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      container.requestFullscreen();
-    }
+  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const v = playerRef.current;
+    if (!v) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const fraction = (e.clientX - rect.left) / rect.width;
+    v.seekTo(fraction, "fraction");
   }, []);
 
-  // Auto-hide controls after 3s of inactivity
-  const resetControlsTimer = useCallback(() => {
-    setShowControls(true);
-    if (controlsTimer.current) clearTimeout(controlsTimer.current);
-    controlsTimer.current = setTimeout(() => {
-      if (isPlaying) setShowControls(false);
-    }, 3000);
-  }, [isPlaying]);
+  const fmt = (s: number) =>
+    `${Math.floor(s / 60).toString().padStart(2, "0")}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
 
-  useEffect(() => {
-    return () => {
-      if (controlsTimer.current) clearTimeout(controlsTimer.current);
-    };
-  }, []);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div
-      ref={containerRef}
-      className="video-container relative mx-auto"
-      style={{
-        aspectRatio: "9/16",
-        maxHeight: "70vh",
-        width: "auto",
-      }}
-      onMouseMove={resetControlsTimer}
-      onTouchStart={resetControlsTimer}
-    >
-      {/* ── Ambient Glow Background ──────────────────────────────────── */}
+    <div className="video-section" style={{
+      padding: "32px 36px",
+      background: "linear-gradient(180deg, var(--deep) 0%, var(--dim) 100%)",
+      display: "flex", gap: 20, alignItems: "stretch",
+      minHeight: 520, position: "relative",
+      borderBottom: "1px solid rgba(255,255,255,0.06)",
+    }}>
+      {/* Glow orb behind video */}
+      <div style={{
+        position: "absolute", top: "50%", left: 220, transform: "translateY(-50%)",
+        width: 340, height: 520,
+        background: "radial-gradient(ellipse, rgba(0,255,159,0.05) 0%, rgba(0,229,255,0.02) 40%, transparent 70%)",
+        pointerEvents: "none", borderRadius: "50%",
+      }} />
+
+      {/* 9:16 Video Player */}
       <div
-        className="absolute inset-0 -z-10"
+        onMouseEnter={() => setShowControls(true)}
+        onMouseLeave={() => setShowControls(false)}
         style={{
-          background: `radial-gradient(
-            ellipse 80% 60% at 50% 40%,
-            rgba(0, 229, 255, 0.08) 0%,
-            rgba(179, 136, 255, 0.04) 40%,
-            transparent 70%
-          )`,
-          filter: "blur(40px)",
-          transform: "scale(1.3)",
+          position: "relative", width: 340, minWidth: 340, aspectRatio: "9/16",
+          borderRadius: 16, background: "#0a0a1a", overflow: "hidden", flexShrink: 0,
+          border: "1px solid rgba(255,255,255,0.1)",
+          boxShadow: "0 0 60px rgba(0,255,159,0.08), 0 20px 60px rgba(0,0,0,0.5)",
         }}
-      />
-
-      {/* ── Video Element ────────────────────────────────────────────── */}
-      <video
-        ref={handleVideoRef}
-        src={isLocked ? undefined : videoUrl}
-        className="w-full h-full object-cover rounded-2xl"
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={() => {
-          setIsPlaying(false);
-          onEnded();
-        }}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        playsInline
-        preload="metadata"
-      />
-
-      {/* ── Lock Overlay ─────────────────────────────────────────────── */}
-      {isLocked && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center glass-strong rounded-2xl z-10">
-          {/* Lock icon */}
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mb-6 animate-float"
-            style={{
-              background: "rgba(0, 229, 255, 0.1)",
-              border: "2px solid rgba(0, 229, 255, 0.3)",
-            }}
-          >
-            <svg
-              className="w-10 h-10"
-              style={{ color: "var(--accent-cyan)" }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
+      >
+        {isLocked ? (
+          <div style={{
+            width: "100%", height: "100%",
+            background: "linear-gradient(160deg, #0d0d20 0%, #050510 50%, #0a1a15 100%)",
+            display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 20,
+          }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: 6 }}>
+              LESSON 03 — TRANSACTIONS
+            </div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", letterSpacing: "0.06em", lineHeight: 1.1 }}>
+              THE STELLAR<br />LEDGER
+            </div>
           </div>
-          <h3
-            className="text-lg font-bold mb-2"
-            style={{ color: "var(--foreground)" }}
-          >
-            Course Locked
-          </h3>
-          <p
-            className="text-sm mb-6 text-center max-w-[200px]"
-            style={{ color: "var(--foreground-muted)" }}
-          >
-            Unlock this course to start learning and earning tokens
-          </p>
-          <button
-            id="unlock-course-btn"
-            onClick={onUnlock}
-            disabled={isUnlocking}
-            className="btn-primary !rounded-full flex items-center gap-2"
-          >
-            {isUnlocking ? (
-              <>
-                <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-                Unlocking...
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-                  />
-                </svg>
-                Unlock Course (1 XLM)
-              </>
-            )}
-          </button>
-        </div>
-      )}
+        ) : (
+          <div style={{ width: "100%", height: "100%", pointerEvents: "none" }}>
+            <Player
+              ref={playerRef}
+              url={videoUrl}
+              playing={isPlaying}
+              width="100%"
+              height="100%"
+              style={{ objectFit: "cover" }}
+              onProgress={(state: any) => { setCurrentTime(state.playedSeconds); onTimeUpdate(); }}
+              onDuration={(d: number) => setDuration(d)}
+              onEnded={() => { setIsPlaying(false); onEnded(); }}
+              controls={false}
+              config={{ youtube: { playerVars: { modestbranding: 1, rel: 0 } } } as any}
+            />
+          </div>
+        )}
 
-      {/* ── Custom Controls ──────────────────────────────────────────── */}
-      {!isLocked && (
-        <div
-          className="absolute inset-0 flex flex-col justify-end z-10 rounded-2xl overflow-hidden transition-opacity duration-300"
-          style={{ opacity: showControls ? 1 : 0 }}
-        >
-          {/* Click to play/pause */}
-          <button
-            className="absolute inset-0 cursor-pointer"
-            onClick={togglePlay}
-            aria-label={isPlaying ? "Pause" : "Play"}
-          />
+        {/* Click overlay to toggle play when clicking on the video */}
+        {!isLocked && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 2, cursor: "pointer" }} onClick={togglePlay} />
+        )}
 
-          {/* Play indicator */}
-          {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{
-                  background: "rgba(0, 229, 255, 0.2)",
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                <svg
-                  className="w-8 h-8 ml-1"
-                  style={{ color: "var(--accent-cyan)" }}
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
+        {/* Controls overlay */}
+        {!isLocked && (
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0, padding: 14,
+            background: "linear-gradient(transparent, rgba(5,5,16,0.95))",
+            display: "flex", flexDirection: "column", gap: 8,
+            opacity: showControls ? 1 : 0, transition: "opacity 0.2s", zIndex: 5,
+          }}>
+            <div onClick={handleSeek} style={{
+              height: 3, background: "rgba(255,255,255,0.15)", cursor: "pointer",
+              borderRadius: 2, overflow: "hidden",
+            }}>
+              <div style={{ height: "100%", borderRadius: 2, background: "var(--gradient-main)", width: `${pct}%`, transition: "width 0.3s linear" }} />
             </div>
-          )}
-
-          {/* Progress bar area */}
-          <div
-            className="relative px-4 pb-4 pt-12"
-            style={{
-              background:
-                "linear-gradient(transparent, rgba(6, 9, 24, 0.9))",
-            }}
-          >
-            {/* Progress bar */}
-            <div className="relative h-1 rounded-full mb-3 overflow-hidden"
-              style={{ background: "rgba(255, 255, 255, 0.1)" }}>
-              <div
-                className="absolute inset-y-0 left-0 rounded-full"
-                style={{
-                  width: `${progressPercent}%`,
-                  background: "var(--gradient-primary)",
-                }}
-              />
-              <input
-                type="range"
-                min={0}
-                max={duration || 0}
-                step={0.1}
-                value={currentTime}
-                onChange={handleSeek}
-                className="absolute inset-0 w-full opacity-0 cursor-pointer"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span
-                className="text-xs font-mono"
-                style={{ color: "var(--foreground-muted)" }}
-              >
-                {formatTime(currentTime)} / {formatTime(duration)}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={togglePlay} style={{ background: "none", border: "none", color: "var(--white)", cursor: "pointer", fontSize: "0.75rem", fontFamily: "var(--font-mono)" }}>
+                {isPlaying ? "❚❚" : "▶"}
+              </button>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.58rem", color: "rgba(255,255,255,0.5)", marginLeft: "auto" }}>
+                {fmt(currentTime)} / {fmt(duration)}
               </span>
-              <div className="flex items-center gap-2">
-                {/* Completion badge */}
-                {progress.hasCompleted && (
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{
-                      background: "rgba(0, 230, 118, 0.15)",
-                      color: "var(--accent-green)",
-                    }}
-                  >
-                    ✓ Completed
-                  </span>
-                )}
-                {/* Fullscreen button */}
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-1 rounded-md transition-colors hover:bg-white/10"
-                  style={{ color: "var(--foreground-muted)" }}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-                    />
-                  </svg>
-                </button>
-              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Lock overlay */}
+        {isLocked && (
+          <div style={{
+            position: "absolute", inset: 0, background: "rgba(5,5,16,0.8)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: 16,
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", gap: 16, zIndex: 20,
+          }}>
+            <div className="animate-float" style={{
+              width: 64, height: 64, borderRadius: "50%",
+              background: "rgba(0,255,159,0.08)", border: "1px solid rgba(0,255,159,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "1.8rem", color: "var(--neon)",
+            }}>⬡</div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", letterSpacing: "0.12em", textAlign: "center", lineHeight: 1.1 }}>
+              UNLOCK<br />COURSE
+            </div>
+            <div style={{
+              fontFamily: "var(--font-mono)", fontSize: "0.75rem", letterSpacing: "0.15em",
+              color: "var(--neon)", padding: "4px 12px", borderRadius: 4,
+              background: "rgba(0,255,159,0.08)", border: "1px solid rgba(0,255,159,0.2)",
+            }}>1 XLM</div>
+            <button
+              onClick={() => { if (!isConnected) { showToast("CONNECT WALLET FIRST"); return; } onUnlock(); }}
+              disabled={isUnlocking}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: "0.72rem", fontWeight: 700,
+                letterSpacing: "0.12em", textTransform: "uppercase",
+                background: "var(--gradient-main)", backgroundSize: "200% 200%",
+                color: "var(--black)", border: "none", padding: "12px 28px",
+                borderRadius: 8, cursor: "pointer", marginTop: 8,
+                boxShadow: "0 4px 20px rgba(0,255,159,0.2)",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ""; }}
+            >{isUnlocking ? "PROCESSING..." : "→ UNLOCK NOW"}</button>
+          </div>
+        )}
+      </div>
+
+      {/* Right side — Chapter Cards Grid */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, minHeight: 0 }}>
+        {/* Progress + Chapter + Time row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+          <div style={{
+            padding: "12px 14px", borderRadius: 8,
+            background: "rgba(0,255,159,0.04)", border: "1px solid rgba(0,255,159,0.12)",
+          }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.48rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "#666", marginBottom: 4 }}>
+              PROGRESS
+            </div>
+            <div className="text-gradient" style={{ fontFamily: "var(--font-display)", fontSize: "1.8rem", lineHeight: 1 }}>
+              {Math.round(pct)}%
+            </div>
+          </div>
+          <div style={{
+            padding: "12px 14px", borderRadius: 8,
+            background: "rgba(0,229,255,0.04)", border: "1px solid rgba(0,229,255,0.12)",
+          }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.48rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "#666", marginBottom: 4 }}>
+              CHAPTER
+            </div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.8rem", lineHeight: 1, color: "var(--cyan)" }}>
+              {CHAPTERS[activeChapter]?.num}
+            </div>
+          </div>
+          <div style={{
+            padding: "12px 14px", borderRadius: 8,
+            background: "rgba(179,136,255,0.04)", border: "1px solid rgba(179,136,255,0.12)",
+          }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.48rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "#666", marginBottom: 4 }}>
+              DURATION
+            </div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.8rem", lineHeight: 1, color: "var(--purple)" }}>
+              4:30
             </div>
           </div>
         </div>
-      )}
+
+        {/* Chapter label */}
+        <div style={{
+          fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.2em",
+          textTransform: "uppercase", color: "#555", display: "flex", alignItems: "center", gap: 6,
+          padding: "2px 0",
+        }}>
+          <span style={{ width: 12, height: 2, background: "var(--gradient-main)", display: "inline-block", borderRadius: 1 }} />
+          CHAPTERS
+        </div>
+
+        {/* Chapter Cards Grid — 2x3, fills remaining height */}
+        <div style={{ display: "grid", gridAutoFlow: "column", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr 1fr", gap: 6, flex: 1 }}>
+          {CHAPTERS.map((ch, i) => {
+            const c = CH_COLORS[i];
+            const isActive = i === activeChapter;
+            const isDone = ch.done;
+            return (
+              <div key={ch.num}
+                onClick={() => { setActiveChapter(i); showToast(`CHAPTER ${ch.num}: ${ch.title}`); }}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  background: isActive ? c.bg : "rgba(255,255,255,0.015)",
+                  border: `1px solid ${isActive ? c.border : "rgba(255,255,255,0.05)"}`,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = c.bg;
+                    e.currentTarget.style.borderColor = c.border;
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.015)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.transform = "";
+                  }
+                }}
+              >
+                {/* Top row: number + status */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{
+                    fontFamily: "var(--font-mono)", fontSize: "0.65rem", letterSpacing: "0.08em",
+                    color: isActive ? c.accent : "#777",
+                    fontWeight: 800,
+                  }}>
+                    CH.{ch.num}
+                  </span>
+                  {isDone && (
+                    <span style={{
+                      fontSize: "0.45rem", padding: "2px 6px", borderRadius: 8,
+                      background: "rgba(0,255,159,0.1)", color: "var(--neon)",
+                      fontFamily: "var(--font-mono)", letterSpacing: "0.1em", fontWeight: 600,
+                    }}>DONE</span>
+                  )}
+                  {isActive && !isDone && (
+                    <span style={{
+                      fontSize: "0.45rem", padding: "2px 6px", borderRadius: 8,
+                      background: "rgba(0,229,255,0.1)", color: "var(--cyan)",
+                      fontFamily: "var(--font-mono)", letterSpacing: "0.1em", fontWeight: 600,
+                    }}>ACTIVE</span>
+                  )}
+                </div>
+
+                {/* Title */}
+                <div style={{
+                  fontFamily: "var(--font-display)", fontSize: "0.85rem",
+                  letterSpacing: "0.04em", lineHeight: 1.1,
+                  color: isActive || isDone ? "var(--white)" : "rgba(255,255,255,0.4)",
+                  marginBottom: 2,
+                }}>
+                  {ch.title}
+                </div>
+
+                {/* Description */}
+                <div style={{
+                  fontFamily: "var(--font-mono)", fontSize: "0.48rem",
+                  letterSpacing: "0.02em", lineHeight: 1.3,
+                  color: isActive ? "rgba(255,255,255,0.5)" : "#444",
+                }}>
+                  {ch.desc}
+                </div>
+
+                {/* Active indicator bar */}
+                {isActive && (
+                  <div style={{
+                    position: "absolute", bottom: 0, left: 0, right: 0, height: 2,
+                    background: "var(--gradient-main)",
+                  }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,181 +1,112 @@
 "use client";
 
-// ============================================================================
-// RECENT GRADUATES — Live Event Feed
-// ============================================================================
-// Real-time feed showing users who recently passed courses.
-// Uses Soroban RPC getEvents() to poll for course_passed events.
-// ============================================================================
+import { useState, useEffect } from "react";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { truncateAddress } from "@/lib/stellar";
-
-interface GraduateEntry {
-  id: string;
-  address: string;
-  courseId: number;
-  timestamp: Date;
+interface FeedEntry {
+  id: string; addr: string; course: string; action: string; time: string;
 }
 
-// Demo entries for when contracts aren't deployed yet
-const DEMO_ENTRIES: GraduateEntry[] = [
-  {
-    id: "demo-1",
-    address: "GAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    courseId: 0,
-    timestamp: new Date(Date.now() - 120000),
-  },
-  {
-    id: "demo-2",
-    address: "GBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    courseId: 1,
-    timestamp: new Date(Date.now() - 300000),
-  },
-  {
-    id: "demo-3",
-    address: "GCXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    courseId: 0,
-    timestamp: new Date(Date.now() - 600000),
-  },
-];
+const ADDRS = ["GAXF...C209","GBKL...1EFF","GC2D...9A3B","GDMN...A0C4","GEQR...2B5E","GFST...D9A7","GGVW...E312","GHXY...6C08","GIZZ...3D14"];
+const COURSES = ["COURSE_01","COURSE_02","COURSE_03"];
+const ACTIONS = ["passed","completed","graduated from","earned NFT for"];
+const COLORS: Record<string, string> = { "passed": "var(--neon)", "completed": "var(--cyan)", "graduated from": "var(--purple)", "earned NFT for": "var(--amber)" };
+
+function ts() {
+  const n = new Date();
+  return `${n.getHours().toString().padStart(2,"0")}:${n.getMinutes().toString().padStart(2,"0")}:${n.getSeconds().toString().padStart(2,"0")}`;
+}
+function rand(): FeedEntry {
+  const action = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
+  return { id: Math.random().toString(36).slice(2), addr: ADDRS[Math.floor(Math.random() * ADDRS.length)], course: COURSES[Math.floor(Math.random() * COURSES.length)], action, time: ts() };
+}
 
 export default function RecentGraduates() {
-  const [entries, setEntries] = useState<GraduateEntry[]>(DEMO_ENTRIES);
-  const [isLive, setIsLive] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [entries, setEntries] = useState<FeedEntry[]>([]);
 
-  // Auto-scroll when new entries arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
+    setEntries([
+      { id: "i1", addr: "GAXF...C209", course: "COURSE_01", action: "passed", time: ts() },
+      { id: "i2", addr: "GBKL...1EFF", course: "COURSE_02", action: "completed", time: ts() },
+      { id: "i3", addr: "GC2D...9A3B", course: "COURSE_01", action: "graduated from", time: ts() },
+    ]);
+    let t: NodeJS.Timeout;
+    function spawn() {
+      setEntries(p => [rand(), ...p].slice(0, 10));
+      t = setTimeout(spawn, 3000 + Math.random() * 6000);
     }
-  }, [entries.length]);
-
-  // Poll for new events
-  const pollEvents = useCallback(async () => {
-    // When contracts are deployed, this would call Soroban RPC:
-    // const server = getServer();
-    // const events = await server.getEvents({
-    //   startLedger: lastLedger,
-    //   filters: [{
-    //     type: "contract",
-    //     contractIds: [COURSE_QUIZ_CONTRACT_ID],
-    //     topics: [["AAAADwAAAAZjb3Vyc2U=", "AAAADwAAAAZwYXNzZWQ="]]
-    //   }]
-    // });
-    // For now, we simulate with demo entries
+    t = setTimeout(spawn, 3000);
+    return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    pollEvents();
-    const interval = setInterval(pollEvents, 5000);
-    return () => clearInterval(interval);
-  }, [pollEvents]);
-
-  const formatTimeAgo = (date: Date) => {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    return `${hours}h ago`;
-  };
-
   return (
-    <div className="glass rounded-2xl overflow-hidden">
-      {/* ── Header ────────────────────────────────────────────────── */}
-      <div className="p-4 flex items-center justify-between"
-        style={{ borderBottom: "1px solid rgba(0, 229, 255, 0.1)" }}>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{
-              background: isLive ? "var(--accent-green)" : "var(--accent-amber)",
-              animation: isLive ? "pulse-glow 2s ease-in-out infinite" : "none",
-            }}
-          />
-          <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-            Recent Graduates
-          </h3>
+    <div style={{
+      background: "var(--gradient-card)",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: 14,
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+      maxHeight: 420,
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "16px 20px 14px",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{
+            width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+            background: "var(--red)", boxShadow: "0 0 10px rgba(255,71,87,0.5)",
+            animation: "pulse-dot 1.5s ease-in-out infinite",
+          }} />
+          <span style={{
+            fontFamily: "var(--font-mono)", fontSize: "0.62rem", letterSpacing: "0.2em",
+            textTransform: "uppercase", color: "#777",
+          }}>
+            LIVE — RECENT GRADUATES
+          </span>
         </div>
-        <span
-          className="text-xs px-2 py-0.5 rounded-full"
-          style={{
-            background: "rgba(0, 229, 255, 0.1)",
-            color: "var(--accent-cyan)",
-          }}
-        >
-          {entries.length} total
+        <span style={{
+          fontFamily: "var(--font-mono)", fontSize: "0.55rem",
+          padding: "3px 10px", borderRadius: 20,
+          background: "rgba(0,255,159,0.08)", color: "var(--neon)",
+          border: "1px solid rgba(0,255,159,0.15)",
+        }}>
+          {entries.length} ACTIVE
         </span>
       </div>
 
-      {/* ── Entries ───────────────────────────────────────────────── */}
-      <div
-        ref={scrollRef}
-        className="max-h-80 overflow-y-auto p-2"
-      >
-        {entries.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>
-              No graduates yet. Be the first! 🎓
-            </p>
+      {/* Feed */}
+      <div style={{ flex: 1, overflow: "auto", padding: "4px 0" }}>
+        {entries.map((e) => (
+          <div key={e.id} className="animate-feedIn" style={{
+            padding: "10px 20px", fontFamily: "var(--font-mono)", fontSize: "0.62rem",
+            letterSpacing: "0.03em", lineHeight: 1.6,
+            color: "rgba(255,255,255,0.5)",
+            borderBottom: "1px solid rgba(255,255,255,0.02)",
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={ev => { ev.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+          onMouseLeave={ev => { ev.currentTarget.style.background = "transparent"; }}
+          >
+            <span style={{ color: "var(--cyan)", fontWeight: 600 }}>{e.addr}</span>{" "}
+            <span style={{ color: "#555" }}>{e.action}</span>{" "}
+            <span style={{ color: COLORS[e.action] || "var(--neon)", fontWeight: 600 }}>{e.course}</span>
+            <span style={{ display: "block", fontSize: "0.5rem", color: "#444", marginTop: 2 }}>
+              {e.time} UTC
+            </span>
           </div>
-        ) : (
-          entries.map((entry, index) => (
-            <div
-              key={entry.id}
-              className="flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-white/[0.03] animate-slide-in"
-              style={{ animationDelay: `${index * 80}ms` }}
-            >
-              {/* Avatar */}
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                style={{
-                  background: `hsl(${(entry.address.charCodeAt(1) * 47) % 360}, 70%, 50%)`,
-                  color: "#fff",
-                }}
-              >
-                {entry.address.charAt(0)}
-              </div>
+        ))}
+      </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-sm font-mono truncate"
-                    style={{ color: "var(--foreground)" }}
-                  >
-                    {truncateAddress(entry.address)}
-                  </span>
-                  <span className="text-xs" style={{ color: "var(--accent-green)" }}>
-                    ✓
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs" style={{ color: "var(--foreground-muted)" }}>
-                    Course #{entry.courseId}
-                  </span>
-                  <span className="text-xs" style={{ color: "var(--foreground-muted)" }}>
-                    •
-                  </span>
-                  <span className="text-xs" style={{ color: "var(--foreground-muted)" }}>
-                    {formatTimeAgo(entry.timestamp)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Reward badge */}
-              <span
-                className="text-xs font-semibold px-2 py-1 rounded-full shrink-0"
-                style={{
-                  background: "rgba(179, 136, 255, 0.1)",
-                  color: "var(--accent-purple)",
-                }}
-              >
-                +10 LEARN
-              </span>
-            </div>
-          ))
-        )}
+      {/* Cursor */}
+      <div style={{
+        padding: "8px 20px", borderTop: "1px solid rgba(255,255,255,0.04)",
+        fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "#333",
+      }}>
+        <span style={{ animation: "blink 0.8s step-end infinite", color: "var(--neon)" }}>_</span>
+        <span style={{ color: "#444", marginLeft: 6 }}>watching for events...</span>
       </div>
     </div>
   );

@@ -1,210 +1,144 @@
 "use client";
 
-// ============================================================================
-// COURSE VIEW — Main Page Component
-// ============================================================================
-// Combines VideoPlayer + QuizModule into a single course experience.
-// State machine: locked → watching → quiz → completed
-// ============================================================================
-
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import VideoPlayer from "./VideoPlayer";
-import QuizModule, { QuizQuestion } from "./QuizModule";
+import QuizModule from "./QuizModule";
 import { useWallet } from "@/context/WalletProvider";
-
-// ── Demo Course Data ─────────────────────────────────────────────────────
-// Replace with dynamic data from the blockchain or an API
-
-const DEMO_VIDEO_URL =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-
-const DEMO_QUESTIONS: QuizQuestion[] = [
-  {
-    question: "What is the Stellar network primarily designed for?",
-    options: [
-      "Mining cryptocurrency",
-      "Cross-border payments and asset transfers",
-      "Smart contract gaming",
-      "Social media rewards",
-    ],
-  },
-  {
-    question: "What language are Soroban smart contracts written in?",
-    options: ["Solidity", "JavaScript", "Rust", "Python"],
-  },
-  {
-    question: "What does SEP-41 define in the Stellar ecosystem?",
-    options: [
-      "A consensus algorithm",
-      "A standard fungible token interface",
-      "A wallet specification",
-      "A bridge protocol",
-    ],
-  },
-  {
-    question: "How many decimals does the LEARN token use?",
-    options: ["18", "8", "7", "6"],
-  },
-];
-
-// Correct answers: [1, 2, 1, 2] (0-indexed)
+import { useToast } from "@/components/Toast";
+import { COURSES } from "@/data/courses";
 
 type CourseStage = "locked" | "watching" | "quiz" | "completed";
 
-interface CourseViewProps {
-  courseId?: number;
-}
-
-export default function CourseView({ courseId = 0 }: CourseViewProps) {
+export default function CourseView({ courseId = 0 }: { courseId?: number }) {
+  const course = COURSES.find(c => c.id === courseId) || COURSES[0];
   const { isConnected } = useWallet();
+  const { showToast } = useToast();
   const [stage, setStage] = useState<CourseStage>("locked");
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleUnlock = useCallback(async () => {
-    if (!isConnected) {
-      alert("Please connect your wallet first!");
-      return;
-    }
-
+    if (!isConnected) { showToast("CONNECT WALLET FIRST"); return; }
     setIsUnlocking(true);
     try {
-      // In production, this calls the contract:
-      // const tx = await buildContractTransaction(
-      //   address, COURSE_QUIZ_CONTRACT_ID, "unlock_course",
-      //   [addressToScVal(address), u32ToScVal(courseId), addressToScVal(XLM_SAC_CONTRACT_ID)]
-      // );
-      // const signedXdr = await signTransaction(tx.toXDR());
-      // await submitTransaction(signedXdr);
-
-      // Simulate unlock for demo
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((r) => setTimeout(r, 1800));
       setStage("watching");
-    } catch (error) {
-      console.error("Unlock failed:", error);
-      alert("Failed to unlock course. Please try again.");
-    } finally {
-      setIsUnlocking(false);
-    }
-  }, [isConnected]);
+      showToast("COURSE UNLOCKED — TX CONFIRMED");
+    } catch { showToast("UNLOCK FAILED"); }
+    finally { setIsUnlocking(false); }
+  }, [isConnected, showToast]);
 
-  const handleQuizSubmit = useCallback(
-    async (answers: number[]): Promise<boolean> => {
-      setIsSubmitting(true);
-      try {
-        // In production, this calls the contract:
-        // const tx = await buildContractTransaction(
-        //   address, COURSE_QUIZ_CONTRACT_ID, "submit_quiz",
-        //   [addressToScVal(address), u32ToScVal(courseId), u32ArrayToScVal(answers)]
-        // );
-        // const signedXdr = await signTransaction(tx.toXDR());
-        // const result = await submitTransaction(signedXdr);
-        // return result === true;
+  // Reset stage when course changes
+  useEffect(() => {
+    setStage("locked");
+  }, [courseId]);
 
-        // Simulate quiz validation
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        const correctAnswers = [1, 2, 1, 2];
-        const passed = answers.every(
-          (a, i) => a === correctAnswers[i]
-        );
-
-        if (passed) {
-          setStage("completed");
-        }
-
-        return passed;
-      } catch (error) {
-        console.error("Quiz submission failed:", error);
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    []
-  );
-
-  const showQuiz = stage === "watching" || stage === "quiz";
+  const handleQuizSubmit = useCallback(async (answers: number[]): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      await new Promise((r) => setTimeout(r, 1500));
+      const passed = answers.every((a, i) => a === course.questions[i].correctIndex);
+      if (passed) setStage("completed");
+      return passed;
+    } finally { setIsSubmitting(false); }
+  }, [course]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 w-full">
-      {/* ── Video Column ──────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center">
-        {/* Course title */}
-        <div className="w-full mb-4">
-          <div className="flex items-center gap-3 mb-2">
-            <span
-              className="text-xs font-semibold px-3 py-1 rounded-full"
-              style={{
-                background: "rgba(0, 229, 255, 0.1)",
-                color: "var(--accent-cyan)",
-              }}
-            >
-              Course #{courseId}
-            </span>
-            {stage === "completed" && (
-              <span
-                className="text-xs font-semibold px-3 py-1 rounded-full"
-                style={{
-                  background: "rgba(0, 230, 118, 0.1)",
-                  color: "var(--accent-green)",
-                }}
-              >
-                ✓ Completed
-              </span>
-            )}
-          </div>
-          <h2 className="text-2xl font-bold text-gradient mb-1">
-            Introduction to Stellar & Soroban
-          </h2>
-          <p style={{ color: "var(--foreground-muted)" }}>
-            Learn the fundamentals of the Stellar network and Soroban smart
-            contracts. Pass the quiz to earn 10 LEARN tokens!
-          </p>
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* Course Header */}
+      <div
+        className="course-header"
+        style={{
+          padding: "48px 44px 32px",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--gradient-glow), var(--dim)",
+          position: "relative",
+          overflow: "hidden",
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        {/* Decorative gradient orbs */}
+        <div style={{ position: "absolute", top: -80, right: -60, width: 300, height: 300, background: "radial-gradient(circle, rgba(0,255,159,0.06) 0%, transparent 60%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: -40, left: -60, width: 300, height: 300, background: "radial-gradient(circle, rgba(0,229,255,0.04) 0%, transparent 60%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, height: 500, background: "radial-gradient(circle, rgba(179,136,255,0.03) 0%, transparent 50%)", pointerEvents: "none" }} />
+
+        <div style={{
+          fontFamily: "var(--font-mono)", fontSize: "0.65rem", letterSpacing: "0.3em",
+          textTransform: "uppercase", marginBottom: 16,
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span style={{ width: 28, height: 2, background: "var(--gradient-main)", display: "inline-block", borderRadius: 1 }} />
+          <span className="text-gradient">COURSE_{String(course.id + 1).padStart(2, "0")}</span>
+          <span style={{ color: "#555" }}>— STELLAR ECOSYSTEM</span>
+          <span style={{ width: 28, height: 2, background: "var(--gradient-main)", display: "inline-block", borderRadius: 1 }} />
         </div>
 
-        <VideoPlayer
-          courseId={courseId}
-          videoUrl={DEMO_VIDEO_URL}
-          isLocked={stage === "locked"}
-          onUnlock={handleUnlock}
-          isUnlocking={isUnlocking}
-        />
+        <h1 style={{
+          fontFamily: "var(--font-display)",
+          fontSize: "clamp(2rem, 4vw, 4rem)",
+          letterSpacing: "0.06em",
+          lineHeight: 1,
+          textTransform: "uppercase",
+          marginBottom: 20,
+          whiteSpace: "nowrap",
+        }}>
+          {course.title} <span className="text-gradient">{course.subtitle}</span>
+        </h1>
 
-        {/* Show quiz tab after unlocking */}
-        {stage === "watching" && (
-          <button
-            id="start-quiz-btn"
-            onClick={() => setStage("quiz")}
-            className="btn-primary mt-6 flex items-center gap-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-              />
-            </svg>
-            Take the Quiz
-          </button>
-        )}
+        <div style={{
+          display: "flex", gap: 14, fontFamily: "var(--font-mono)", fontSize: "0.68rem",
+          letterSpacing: "0.08em", textTransform: "uppercase", color: "#555",
+          flexWrap: "wrap", justifyContent: "center",
+        }}>
+          {[
+            { label: "DURATION", val: course.duration, color: "rgba(255,255,255,0.8)" },
+            { label: "LEVEL", val: course.level, color: course.level === "BEGINNER" ? "var(--neon)" : course.level === "ADVANCED" ? "var(--purple)" : "var(--cyan)" },
+            { label: "REWARD", val: course.reward, color: "var(--neon)" },
+            { label: "ENROLLED", val: course.enrolled, color: "var(--purple)" },
+          ].map(m => (
+            <div key={m.label} style={{
+              padding: "6px 14px", borderRadius: 6,
+              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+            }}>
+              {m.label} <span style={{ color: m.color, fontWeight: 600 }}>{m.val}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* ── Quiz Column ───────────────────────────────────────────── */}
-      {showQuiz && stage === "quiz" && (
-        <div className="lg:w-[420px] animate-fade-in-up">
-          <QuizModule
-            courseId={courseId}
-            questions={DEMO_QUESTIONS}
-            onSubmit={handleQuizSubmit}
-            isSubmitting={isSubmitting}
-          />
+      {/* Video */}
+      <VideoPlayer courseId={course.id} videoUrl={`https://www.youtube.com/watch?v=${course.videoId}`}
+        isLocked={stage === "locked"} onUnlock={handleUnlock} isUnlocking={isUnlocking} />
+
+      {/* Start quiz button */}
+      {stage === "watching" && (
+        <div style={{ padding: "24px 44px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "var(--dim)" }}>
+          <button
+            onClick={() => setStage("quiz")}
+            style={{
+              fontFamily: "var(--font-mono)", fontSize: "0.78rem", fontWeight: 700,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+              background: "var(--gradient-main)", backgroundSize: "200% 200%",
+              color: "var(--black)", border: "none", padding: "16px 36px",
+              borderRadius: 8, cursor: "pointer", width: "100%",
+              boxShadow: "0 4px 24px rgba(0,255,159,0.2)",
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,255,159,0.3)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,255,159,0.2)"; }}
+          >
+            → START KNOWLEDGE CHECK
+          </button>
         </div>
+      )}
+
+      {/* Quiz */}
+      {(stage === "quiz" || stage === "completed") && (
+        <QuizModule courseId={course.id} questions={course.questions}
+          onSubmit={handleQuizSubmit} isSubmitting={isSubmitting} />
       )}
     </div>
   );

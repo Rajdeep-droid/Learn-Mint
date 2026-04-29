@@ -1,339 +1,198 @@
 "use client";
 
-// ============================================================================
-// QUIZ MODULE — Multiple Choice Quiz with Animations
-// ============================================================================
-// Features:
-//   - Clean A/B/C/D cards with selection animations
-//   - Progress indicator (Question X of Y)
-//   - Submit button calls submit_quiz() on contract
-//   - Success: confetti animation + token reward display
-//   - Error: shake animation + retry prompt
-// ============================================================================
-
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useQuizState } from "@/hooks/useQuizState";
+import { useToast } from "@/components/Toast";
 
-// ── Types ────────────────────────────────────────────────────────────────
-
-export interface QuizQuestion {
-  question: string;
-  options: string[];
-}
+export interface QuizQuestion { question: string; options: string[]; }
 
 interface QuizModuleProps {
   courseId: number;
   questions: QuizQuestion[];
   onSubmit: (answers: number[]) => Promise<boolean>;
   isSubmitting?: boolean;
-  disabled?: boolean;
 }
 
-const OPTION_LABELS = ["A", "B", "C", "D"];
+const L = ["A", "B", "C", "D"];
+const COLORS = ["var(--neon)", "var(--cyan)", "var(--purple)", "var(--amber)"];
 
-// ── Confetti Component ───────────────────────────────────────────────────
-
-function Confetti() {
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 30 }, (_, i) => ({
-        id: i,
-        color: [
-          "var(--accent-cyan)",
-          "var(--accent-purple)",
-          "var(--accent-green)",
-          "var(--accent-amber)",
-        ][i % 4],
-        left: `${Math.random() * 100}%`,
-        delay: `${Math.random() * 2}s`,
-        duration: `${2 + Math.random() * 3}s`,
-        size: `${4 + Math.random() * 6}px`,
-      })),
-    []
-  );
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute rounded-sm"
-          style={{
-            background: p.color,
-            left: p.left,
-            top: "-10px",
-            width: p.size,
-            height: p.size,
-            animation: `confetti-fall ${p.duration} ease-in ${p.delay} forwards`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── Quiz Module ──────────────────────────────────────────────────────────
-
-export default function QuizModule({
-  courseId,
-  questions,
-  onSubmit,
-  isSubmitting = false,
-  disabled = false,
-}: QuizModuleProps) {
-  const {
-    quizState,
-    selectAnswer,
-    nextQuestion,
-    prevQuestion,
-    markSubmitted,
-    resetQuiz,
-  } = useQuizState(courseId);
-
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [shaking, setShaking] = useState(false);
-
+export default function QuizModule({ courseId, questions, onSubmit, isSubmitting = false }: QuizModuleProps) {
+  const { quizState, selectAnswer, nextQuestion, prevQuestion, markSubmitted, resetQuiz } = useQuizState(courseId);
+  const { showToast } = useToast();
+  const [shaking, setSh] = useState(false);
+  const total = questions.length;
   const currentQ = questions[quizState.currentQuestion];
-  const totalQuestions = questions.length;
-  const answeredCount = Object.keys(quizState.selectedAnswers).length;
-  const allAnswered = answeredCount === totalQuestions;
-  const isLastQuestion = quizState.currentQuestion === totalQuestions - 1;
+  const answered = Object.keys(quizState.selectedAnswers).length;
+  const allDone = answered === total;
+  const isLast = quizState.currentQuestion === total - 1;
 
   const handleSubmit = useCallback(async () => {
-    // Build answers array in order
-    const answers = Array.from(
-      { length: totalQuestions },
-      (_, i) => quizState.selectedAnswers[i] ?? -1
-    );
-
+    const ans = Array.from({ length: total }, (_, i) => quizState.selectedAnswers[i] ?? -1);
     try {
-      const passed = await onSubmit(answers);
-      markSubmitted(passed);
-      if (passed) {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 5000);
-      } else {
-        setShaking(true);
-        setTimeout(() => setShaking(false), 600);
-      }
-    } catch (error) {
-      console.error("Quiz submission failed:", error);
-      setShaking(true);
-      setTimeout(() => setShaking(false), 600);
-    }
-  }, [totalQuestions, quizState.selectedAnswers, onSubmit, markSubmitted]);
+      const p = await onSubmit(ans);
+      markSubmitted(p);
+      showToast(p ? "QUIZ PASSED ✓" : "INCORRECT ✗");
+      if (!p) { setSh(true); setTimeout(() => setSh(false), 600); }
+    } catch { setSh(true); setTimeout(() => setSh(false), 600); }
+  }, [total, quizState.selectedAnswers, onSubmit, markSubmitted, showToast]);
 
-  // ── Success State ────────────────────────────────────────────────────
-  if (quizState.isSubmitted && quizState.isPassed) {
+  // ── Complete state ──
+  if (quizState.isSubmitted) {
+    const passed = quizState.isPassed;
     return (
-      <>
-        {showConfetti && <Confetti />}
-        <div
-          id="quiz-success"
-          className="glass-strong rounded-2xl p-8 text-center animate-fade-in-up"
-        >
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
-            style={{
-              background: "rgba(0, 230, 118, 0.15)",
-              border: "2px solid var(--accent-green)",
-            }}
-          >
-            <svg
-              className="w-10 h-10"
-              style={{ color: "var(--accent-green)" }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h3
-            className="text-2xl font-bold mb-2"
-            style={{ color: "var(--accent-green)" }}
-          >
-            Congratulations! 🎉
-          </h3>
-          <p className="mb-4" style={{ color: "var(--foreground-muted)" }}>
-            You passed the quiz and earned
-          </p>
-          <div className="text-4xl font-bold text-gradient mb-6">
-            +10 LEARN
-          </div>
-          <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>
-            Tokens have been minted to your wallet
-          </p>
+      <div style={{ padding: "48px 44px", background: "var(--gradient-glow), var(--dim)" }} className="animate-slideIn">
+        <div style={{
+          fontFamily: "var(--font-display)", fontSize: "clamp(3.5rem, 7vw, 7rem)",
+          letterSpacing: "0.04em", lineHeight: 0.85,
+        }}>
+          <span className={passed ? "text-gradient" : ""} style={passed ? {} : { color: "var(--red)" }}>
+            {passed ? "PASSED" : "FAILED"}
+          </span>
         </div>
-      </>
-    );
-  }
-
-  // ── Failure State ────────────────────────────────────────────────────
-  if (quizState.isSubmitted && quizState.isPassed === false) {
-    return (
-      <div
-        id="quiz-failure"
-        className="glass-strong rounded-2xl p-8 text-center animate-fade-in-up"
-      >
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+        <div style={{
+          fontFamily: "var(--font-mono)", fontSize: "0.75rem", letterSpacing: "0.12em",
+          textTransform: "uppercase", color: "#777",
+          borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 16, marginTop: 20,
+        }}>
+          {passed ? "ALL CHECKS CLEARED — MINT YOUR CERTIFICATE" : "REVIEW AND TRY AGAIN"}
+        </div>
+        <button onClick={passed ? () => showToast("MINTING ON-CHAIN...") : resetQuiz}
           style={{
-            background: "rgba(255, 82, 82, 0.15)",
-            border: "2px solid var(--accent-red)",
-          }}
-        >
-          <svg
-            className="w-10 h-10"
-            style={{ color: "var(--accent-red)" }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </div>
-        <h3
-          className="text-2xl font-bold mb-2"
-          style={{ color: "var(--accent-red)" }}
-        >
-          Not Quite Right
-        </h3>
-        <p className="mb-6" style={{ color: "var(--foreground-muted)" }}>
-          Some answers were incorrect. Review the video and try again!
-        </p>
-        <button
-          id="retry-quiz-btn"
-          onClick={resetQuiz}
-          className="btn-primary"
-        >
-          Try Again
+            marginTop: 20, fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: 700,
+            letterSpacing: "0.12em", textTransform: "uppercase",
+            background: passed ? "var(--gradient-main)" : "transparent",
+            backgroundSize: "200% 200%",
+            color: passed ? "var(--black)" : "var(--white)",
+            border: passed ? "none" : "1px solid rgba(255,255,255,0.15)",
+            padding: "16px 36px", borderRadius: 8, cursor: "pointer",
+            boxShadow: passed ? "0 4px 24px rgba(0,255,159,0.2)" : "none",
+          }}>
+          {passed ? "⬡ MINT NFT CERTIFICATE" : "↺ RETAKE QUIZ"}
         </button>
       </div>
     );
   }
 
-  // ── Active Quiz State ────────────────────────────────────────────────
+  // ── Active quiz ──
   return (
-    <div
-      id="quiz-module"
-      className={`glass-strong rounded-2xl p-6 ${shaking ? "animate-shake" : ""}`}
-    >
-      {/* ── Progress Bar ──────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-6">
-        <span className="text-sm font-medium" style={{ color: "var(--foreground-muted)" }}>
-          Question {quizState.currentQuestion + 1} of {totalQuestions}
-        </span>
-        <span className="text-sm" style={{ color: "var(--accent-cyan)" }}>
-          {answeredCount}/{totalQuestions} answered
-        </span>
+    <div className={shaking ? "animate-shake" : ""}>
+      {/* Header */}
+      <div style={{
+        padding: "24px 44px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)",
+        background: "var(--gradient-glow), var(--dim)",
+        display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16,
+      }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.8rem, 3vw, 2.8rem)", letterSpacing: "0.06em", lineHeight: 1 }}>
+          KNOWLEDGE CHECK
+        </div>
+        <div style={{ display: "flex", gap: 4, alignItems: "center", flexShrink: 0 }}>
+          {Array.from({ length: total }, (_, i) => (
+            <div key={i} style={{
+              width: 24, height: 8, borderRadius: 3,
+              border: `1px solid ${quizState.selectedAnswers[i] !== undefined ? "transparent" : i === quizState.currentQuestion ? "var(--cyan)" : "rgba(255,255,255,0.1)"}`,
+              background: quizState.selectedAnswers[i] !== undefined
+                ? `linear-gradient(90deg, var(--neon), var(--cyan))`
+                : i === quizState.currentQuestion ? "rgba(0,229,255,0.15)" : "transparent",
+              transition: "all 0.2s",
+            }} />
+          ))}
+        </div>
       </div>
 
-      {/* Progress dots */}
-      <div className="flex gap-1.5 mb-8">
-        {Array.from({ length: totalQuestions }, (_, i) => (
-          <div
-            key={i}
-            className="h-1 flex-1 rounded-full transition-all duration-300"
-            style={{
-              background:
-                i === quizState.currentQuestion
-                  ? "var(--accent-cyan)"
-                  : quizState.selectedAnswers[i] !== undefined
-                  ? "var(--accent-purple)"
-                  : "rgba(255, 255, 255, 0.1)",
-            }}
-          />
-        ))}
-      </div>
+      {/* Body */}
+      <div style={{ padding: "36px 44px 44px", minHeight: 300 }} className="animate-slideIn" key={quizState.currentQuestion}>
+        <div style={{
+          fontFamily: "var(--font-mono)", fontSize: "0.6rem", letterSpacing: "0.25em",
+          textTransform: "uppercase", marginBottom: 14,
+        }}>
+          <span className="text-gradient">QUESTION {String(quizState.currentQuestion + 1).padStart(2, "0")}</span>
+          <span style={{ color: "#555" }}> OF {total}</span>
+        </div>
+        <div style={{
+          fontFamily: "var(--font-display)", fontSize: "clamp(1.5rem, 2.5vw, 2.3rem)",
+          letterSpacing: "0.04em", lineHeight: 1.1, marginBottom: 32, maxWidth: 640,
+        }}>
+          {currentQ?.question}
+        </div>
 
-      {/* ── Question ──────────────────────────────────────────────── */}
-      <h3 className="text-lg font-semibold mb-6" style={{ color: "var(--foreground)" }}>
-        {currentQ?.question}
-      </h3>
-
-      {/* ── Options ───────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-3 mb-8">
-        {currentQ?.options.map((option, idx) => {
-          const isSelected =
-            quizState.selectedAnswers[quizState.currentQuestion] === idx;
-          return (
-            <button
-              key={idx}
-              id={`quiz-option-${idx}`}
-              onClick={() => {
-                if (!disabled && !isSubmitting) {
-                  selectAnswer(quizState.currentQuestion, idx);
-                }
-              }}
-              className={`quiz-option flex items-center gap-4 text-left w-full ${
-                isSelected ? "selected" : ""
-              }`}
-              disabled={disabled || isSubmitting}
-            >
-              <span
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-all duration-300"
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {currentQ?.options.map((opt, idx) => {
+            const sel = quizState.selectedAnswers[quizState.currentQuestion] === idx;
+            return (
+              <button key={idx}
+                onClick={() => { if (!isSubmitting) { selectAnswer(quizState.currentQuestion, idx); } }}
+                disabled={isSubmitting}
                 style={{
-                  background: isSelected
-                    ? "var(--accent-cyan)"
-                    : "rgba(0, 229, 255, 0.1)",
-                  color: isSelected ? "#060918" : "var(--accent-cyan)",
+                  fontFamily: "var(--font-mono)", fontSize: "0.78rem", fontWeight: 600,
+                  letterSpacing: "0.06em", textTransform: "uppercase",
+                  background: sel ? "rgba(0,255,159,0.1)" : "rgba(255,255,255,0.02)",
+                  color: sel ? "var(--neon)" : "rgba(255,255,255,0.7)",
+                  border: sel ? "1px solid rgba(0,255,159,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                  padding: "16px 20px", textAlign: "left", cursor: "pointer",
+                  borderRadius: 10, display: "flex", alignItems: "center", gap: 14,
+                  transition: "all 0.15s ease",
                 }}
+                onMouseEnter={e => { if (!sel) { e.currentTarget.style.borderColor = "rgba(0,229,255,0.3)"; e.currentTarget.style.background = "rgba(0,229,255,0.05)"; } }}
+                onMouseLeave={e => { if (!sel) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; } }}
               >
-                {OPTION_LABELS[idx]}
-              </span>
-              <span style={{ color: isSelected ? "var(--foreground)" : "var(--foreground-muted)" }}>
-                {option}
-              </span>
-            </button>
-          );
-        })}
+                <span style={{
+                  width: 30, height: 30, borderRadius: 8, display: "flex",
+                  alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  fontSize: "0.65rem", fontWeight: 700,
+                  background: sel ? "var(--neon)" : "rgba(255,255,255,0.05)",
+                  color: sel ? "var(--black)" : COLORS[idx],
+                  border: sel ? "none" : `1px solid ${COLORS[idx]}33`,
+                  transition: "all 0.15s",
+                }}>
+                  {L[idx]}
+                </span>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── Navigation ────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={prevQuestion}
-          disabled={quizState.currentQuestion === 0}
-          className="btn-secondary !py-2 !px-4 text-sm disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          ← Previous
-        </button>
-
-        {isLastQuestion && allAnswered ? (
-          <button
-            id="submit-quiz-btn"
-            onClick={handleSubmit}
-            disabled={isSubmitting || disabled}
-            className="btn-primary !py-2 !px-6 text-sm flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-                Submitting...
-              </>
-            ) : (
-              "Submit Quiz"
-            )}
+      {/* Footer */}
+      <div style={{
+        padding: "16px 44px", borderTop: "1px solid rgba(255,255,255,0.06)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "#555" }}>
+          <span className="text-gradient">{answered}</span>/{total} ANSWERED
+        </div>
+        {isLast && allDone ? (
+          <button onClick={handleSubmit} disabled={isSubmitting}
+            style={{
+              fontFamily: "var(--font-mono)", fontSize: "0.72rem", fontWeight: 700,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+              background: "var(--gradient-main)", backgroundSize: "200% 200%",
+              color: "var(--black)", border: "none", padding: "10px 28px",
+              borderRadius: 8, cursor: "pointer",
+              boxShadow: "0 4px 16px rgba(0,255,159,0.2)",
+            }}>
+            {isSubmitting ? "SUBMITTING..." : "SUBMIT →"}
           </button>
         ) : (
-          <button
-            onClick={() => nextQuestion(totalQuestions)}
-            disabled={isLastQuestion}
-            className="btn-secondary !py-2 !px-4 text-sm disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            Next →
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {quizState.currentQuestion > 0 && (
+              <button onClick={prevQuestion} style={{
+                fontFamily: "var(--font-mono)", fontSize: "0.68rem", fontWeight: 600,
+                background: "transparent", color: "#777", border: "1px solid rgba(255,255,255,0.1)",
+                padding: "8px 20px", borderRadius: 6, cursor: "pointer",
+              }}>← PREV</button>
+            )}
+            <button onClick={() => nextQuestion(total)} disabled={isLast}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: "0.68rem", fontWeight: 600,
+                background: quizState.selectedAnswers[quizState.currentQuestion] !== undefined ? "rgba(0,229,255,0.08)" : "transparent",
+                color: quizState.selectedAnswers[quizState.currentQuestion] !== undefined ? "var(--cyan)" : "#555",
+                border: `1px solid ${quizState.selectedAnswers[quizState.currentQuestion] !== undefined ? "rgba(0,229,255,0.2)" : "rgba(255,255,255,0.06)"}`,
+                padding: "8px 20px", borderRadius: 6, cursor: "pointer",
+                opacity: quizState.selectedAnswers[quizState.currentQuestion] !== undefined ? 1 : 0.4,
+                pointerEvents: quizState.selectedAnswers[quizState.currentQuestion] !== undefined ? "auto" : "none",
+              }}>NEXT →</button>
+          </div>
         )}
       </div>
     </div>

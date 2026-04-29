@@ -20,3 +20,10 @@ resolver = "2"           # Rust edition 2021+ uses resolver v2 for better dep ha
 [workspace.dependencies]
 soroban-sdk = "25.1.0"
 soroban-token-sdk = "25.1.0"
+
+[profile.release]
+overflow-checks = true
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1
