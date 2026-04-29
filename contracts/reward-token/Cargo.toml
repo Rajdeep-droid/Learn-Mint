@@ -1,0 +1,45 @@
+# ============================================================================
+# REWARD TOKEN CONTRACT — Cargo Configuration
+# ============================================================================
+# This contract implements the SEP-41 token standard on Soroban.
+# SEP-41 is the Stellar Ecosystem Proposal defining the standard interface
+# for fungible tokens — similar to ERC-20 on Ethereum.
+#
+# The token is called "LEARN" and is minted as a reward when users pass quizzes.
+# ============================================================================
+
+[package]
+name = "reward-token"
+description = "Learn Mint reward token — SEP-41 compliant Soroban fungible token"
+version = "0.1.0"
+edition = "2021"
+
+# `cdylib` tells the compiler to produce a C-compatible dynamic library.
+# Soroban compiles this to WebAssembly (WASM), which is the format
+# that runs on the Stellar blockchain's VM.
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+soroban-token-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+
+# ── Release profile optimizations ──────────────────────────────────────────
+# These settings produce the smallest possible WASM binary.
+# Smaller binary = lower deployment cost on Stellar.
+[profile.release]
+opt-level = "z"              # Optimize aggressively for binary size
+overflow-checks = true       # Keep overflow checks for safety
+debug = 0                    # No debug info in release
+strip = "symbols"            # Strip symbol table
+debug-assertions = false     # Disable debug assertions
+panic = "abort"              # Don't unwind on panic — just abort (saves space)
+codegen-units = 1            # Single codegen unit allows better LTO
+lto = true                   # Link-Time Optimization — eliminates unused code
+
+[profile.release-with-logs]
+inherits = "release"
+debug-assertions = true      # Enable logs for debugging on testnet
