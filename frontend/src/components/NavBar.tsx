@@ -57,13 +57,11 @@ export default function NavBar() {
       {/* Left — Logo */}
       <a href="/" onClick={e => { e.preventDefault(); router.push("/"); }}
         style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10, justifySelf: "start" }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 8,
-          background: "var(--gradient-main)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontFamily: "var(--font-display)", fontSize: "1.1rem",
-          color: "var(--black)", fontWeight: 700,
-        }}>LM</div>
+        <img 
+          src="/logo.png" 
+          alt="Learn Mint Logo" 
+          style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain" }} 
+        />
         <span style={{
           fontFamily: "var(--font-display)", fontSize: "1.8rem",
           letterSpacing: "0.1em", lineHeight: 1,
