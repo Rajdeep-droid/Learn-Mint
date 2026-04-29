@@ -1,0 +1,22 @@
+# ============================================================================
+# LEARN MINT — Soroban Smart Contract Workspace
+# ============================================================================
+# This is the root Cargo workspace that ties together our two Soroban contracts:
+#   1. reward-token  — A SEP-41 compliant fungible token (the "LEARN" token)
+#   2. course-quiz   — The course unlock + quiz validation + reward minting logic
+#
+# Think of a Cargo workspace like a monorepo: multiple related Rust projects
+# that share the same dependency versions and build cache.
+# ============================================================================
+
+[workspace]
+members = [
+    "reward-token",
+    "course-quiz",
+]
+resolver = "2"           # Rust edition 2021+ uses resolver v2 for better dep handling
+
+# Shared dependency versions — any member can use `workspace = true` to inherit
+[workspace.dependencies]
+soroban-sdk = "25.1.0"
+soroban-token-sdk = "25.1.0"
