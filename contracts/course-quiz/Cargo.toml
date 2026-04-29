@@ -1,0 +1,44 @@
+# ============================================================================
+# COURSE & QUIZ CONTRACT — Cargo Configuration
+# ============================================================================
+# This contract handles:
+#   1. Course creation (admin sets correct quiz answers)
+#   2. Course unlocking (user pays 1 XLM)
+#   3. Quiz submission (validates answers on-chain)
+#   4. Cross-contract minting (calls the Reward Token to mint LEARN tokens)
+#
+# It does NOT depend on soroban-token-sdk because it doesn't implement
+# the token interface — it just *calls* the token contract as a client.
+# ============================================================================
+
+[package]
+name = "course-quiz"
+description = "Learn Mint course unlock and quiz validation contract"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+# We need the reward-token crate in dev-dependencies so our tests can
+# register the token contract's WASM in the simulated environment.
+reward-token = { path = "../reward-token" }
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+[profile.release-with-logs]
+inherits = "release"
+debug-assertions = true
