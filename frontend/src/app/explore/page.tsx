@@ -7,7 +7,7 @@ export default function ExplorePage() {
   const router = useRouter();
 
   return (
-    <div style={{ padding: "60px", maxWidth: 1400, margin: "0 auto" }}>
+    <div className="mobile-p" style={{ padding: "60px", maxWidth: 1400, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: 48 }}>
         <div style={{
@@ -29,7 +29,7 @@ export default function ExplorePage() {
       {/* Grid */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
         gap: 32,
       }}>
         {COURSES.map((course) => {

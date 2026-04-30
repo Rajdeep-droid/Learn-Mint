@@ -38,13 +38,14 @@ function DashboardContent() {
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           pointerEvents: "none",
         }}>
-          <div style={{
+          <div className="mobile-p" style={{
             background: "var(--gradient-card)", border: "1px solid var(--red)",
             padding: "48px 64px", borderRadius: 16, textAlign: "center",
             boxShadow: "0 20px 60px rgba(255,71,87,0.15)",
             backdropFilter: "blur(20px)",
             pointerEvents: "auto",
             marginBottom: 80,
+            margin: "0 16px 80px",
           }}>
             <div className="animate-float" style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
               <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -107,7 +108,7 @@ function DashboardContent() {
             <CourseView courseId={activeCourseId} />
 
             {/* Next Course Button */}
-            <div style={{ display: "flex", justifyContent: "flex-end", padding: "16px 44px 0" }}>
+            <div className="mobile-p-x" style={{ display: "flex", justifyContent: "flex-end", padding: "16px 44px 0" }}>
               <button 
                 onClick={() => setActiveCourseId((prev) => (prev + 1) % COURSES.length)}
                 style={{
@@ -132,7 +133,7 @@ function DashboardContent() {
         </div>
 
         {/* Bottom section label */}
-        <div style={{ padding: "20px 44px 8px" }}>
+        <div className="mobile-p-x" style={{ padding: "20px 44px 8px" }}>
           <div style={{
             fontFamily: "var(--font-mono)", fontSize: "0.6rem", letterSpacing: "0.25em",
             textTransform: "uppercase", color: "#555", marginBottom: 16,
@@ -144,7 +145,7 @@ function DashboardContent() {
         </div>
 
         {/* Graduates + Certificate */}
-        <div className="bottom-grid" style={{
+        <div className="bottom-grid mobile-p-x" style={{
           display: "grid",
           gridTemplateColumns: "1fr 380px",
           gap: 20,

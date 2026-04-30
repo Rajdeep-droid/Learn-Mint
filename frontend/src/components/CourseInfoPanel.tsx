@@ -77,7 +77,7 @@ export default function CourseInfoPanel() {
   ];
 
   return (
-    <div style={{ padding: "28px 44px 8px" }}>
+    <div className="mobile-p-x" style={{ padding: "28px 44px 8px" }}>
       <div style={{
         fontFamily: "var(--font-mono)", fontSize: "0.6rem", letterSpacing: "0.25em",
         textTransform: "uppercase", color: "#555", marginBottom: 16,
