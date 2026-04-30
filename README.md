@@ -86,6 +86,37 @@ Web3 education today suffers from three critical issues:
 
 ---
 
+## 🌐 Live Preview
+
+### 1. Home Page — Landing
+![Home Page — Platform landing with hero section, animated stats, and how-it-works flow](./screenshots/1-Home.png)
+
+### 2. Explore — Course Catalog
+![Explore — Browse available courses with thumbnails, difficulty levels, and rewards](./screenshots/2-Courses.png)
+
+### 3. Dashboard — Learning Hub
+![Dashboard — Main learning interface with course view, stats, and activity feed](./screenshots/3-Dashboard.png)
+
+### 4. Wallet Connection
+![Wallet — Freighter wallet connection popup for Stellar Testnet authentication](./screenshots/4-Wallet.png)
+
+### 5. Video Lecture
+![Lecture — YouTube-powered video player with chapter navigation and progress tracking](./screenshots/5-Lecture.png)
+
+### 6. Knowledge Quiz
+![Quiz — 5-question multiple-choice quiz with progress indicators](./screenshots/6-Test.png)
+
+### 7. Quiz Results
+![Results — Score breakdown with pass/fail status, percentage bar, and correct/wrong tally](./screenshots/7-result.png)
+
+### 8. Mint Certificate
+![Mint — Certificate minting modal with name input and 200 XLM fee payment](./screenshots/8-Mint.png)
+
+### 9. PDF Certificate
+![Certificate — Downloaded PDF certificate with user name, course title, and issue date](./screenshots/9-Certificate.png)
+
+---
+
 ## ✨ Key Features
 
 ### 📺 Short-Form Video Learning
