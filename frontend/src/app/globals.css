@@ -242,10 +242,26 @@ body::after {
   .bottom-grid { grid-template-columns: 1fr !important; }
   .video-section { flex-direction: column !important; align-items: center !important; }
   .video-section .chapter-side { max-width: 100% !important; }
+  .mobile-grid-1 { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
-/* Mobile: ≤640px */
-@media (max-width: 640px) {
+/* Mobile: ≤768px */
+@media (max-width: 768px) {
+  .mobile-col { flex-direction: column !important; }
+  .mobile-col-reverse { flex-direction: column-reverse !important; }
+  .mobile-grid-1 { grid-template-columns: 1fr !important; }
+  .mobile-grid-2 { grid-template-columns: 1fr 1fr !important; }
+  .mobile-p { padding: 20px !important; }
+  .mobile-p-x { padding-left: 20px !important; padding-right: 20px !important; }
+  .mobile-p-y { padding-top: 20px !important; padding-bottom: 20px !important; }
+  .mobile-text-center { text-align: center !important; justify-content: center !important; }
+  .mobile-hide { display: none !important; }
+  .mobile-wrap { flex-wrap: wrap !important; }
+  .mobile-nav-links { flex-direction: column !important; gap: 8px !important; width: 100%; margin-top: 16px; }
+  .mobile-text-xl { font-size: 2.5rem !important; }
+  .mobile-text-sm { font-size: 0.8rem !important; }
+  .mobile-w-full { width: 100% !important; }
+  
   .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
   .course-header { padding: 24px 20px 20px !important; }
   .course-header h1 { font-size: 2.2rem !important; }

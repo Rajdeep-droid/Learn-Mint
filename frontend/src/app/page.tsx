@@ -92,7 +92,7 @@ export default function Home() {
   return (
     <div style={{ overflow: "hidden" }}>
       {/* ── HERO ───────────────────────────────────────────── */}
-      <section style={{
+      <section className="mobile-col mobile-p" style={{
         minHeight: "calc(100vh - 92px)",
         display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
         padding: "80px 60px", position: "relative", textAlign: "center",
@@ -181,7 +181,7 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ───────────────────────────────────── */}
-      <section style={{
+      <section className="mobile-p" style={{
         padding: "80px 60px", borderTop: "1px solid rgba(255,255,255,0.06)",
         background: "var(--gradient-glow), var(--dim)",
       }}>
@@ -200,7 +200,7 @@ export default function Home() {
           HOW IT <span className="text-gradient">WORKS</span>
         </h2>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+        <div className="mobile-grid-1" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
           {STEPS.map(s => (
             <div key={s.num} style={{
               padding: "28px 24px", borderRadius: 14,
@@ -236,7 +236,7 @@ export default function Home() {
       </section>
 
       {/* ── FEATURES ───────────────────────────────────────── */}
-      <section style={{ padding: "80px 60px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <section className="mobile-p" style={{ padding: "80px 60px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{
           fontFamily: "var(--font-mono)", fontSize: "0.6rem", letterSpacing: "0.3em",
           textTransform: "uppercase", color: "#555", marginBottom: 12,
@@ -252,7 +252,7 @@ export default function Home() {
           BUILT FOR <span className="text-gradient">WEB3</span>
         </h2>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        <div className="mobile-grid-1" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
           {FEATURES.map(f => (
             <div key={f.title} style={{
               padding: "32px 28px", borderRadius: 14,
@@ -316,9 +316,9 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
-      <footer style={{
+      <footer className="mobile-p mobile-col mobile-text-center" style={{
         padding: "24px 60px", borderTop: "1px solid rgba(255,255,255,0.06)",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
+        display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16
       }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", letterSpacing: "0.15em", color: "#444" }}>
           © 2024 LEARN MINT — POWERED BY STELLAR
