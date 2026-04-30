@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useQuizState } from "@/hooks/useQuizState";
 import { useToast } from "@/components/Toast";
 
-export interface QuizQuestion { question: string; options: string[]; }
+export interface QuizQuestion { question: string; options: string[]; correctIndex?: number; }
 
 interface QuizModuleProps {
   courseId: number;
@@ -48,6 +48,13 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
   // ── Complete state ──
   if (quizState.isSubmitted) {
     const passed = quizState.isPassed;
+    const correctCount = questions.reduce((acc, q, i) => {
+      if (q.correctIndex !== undefined && quizState.selectedAnswers[i] === q.correctIndex) return acc + 1;
+      return acc;
+    }, 0);
+    const correctPct = Math.round((correctCount / total) * 100);
+    const wrongPct = 100 - correctPct;
+
     return (
       <div style={{ padding: "48px 44px", background: "var(--gradient-glow), var(--dim)" }} className="animate-slideIn">
         <div style={{
@@ -58,6 +65,34 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
             {passed ? "PASSED" : "FAILED"}
           </span>
         </div>
+
+        {/* Score Percentage */}
+        <div style={{
+          marginTop: 24, padding: "20px 24px", borderRadius: 12,
+          background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", letterSpacing: "0.15em", color: "#777", textTransform: "uppercase" }}>YOUR SCORE</span>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: "1.8rem", letterSpacing: "0.04em", color: correctPct === 100 ? "var(--neon)" : correctPct >= 60 ? "var(--amber)" : "var(--red)" }}>{correctPct}%</span>
+          </div>
+          {/* Progress bar */}
+          <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: 12 }}>
+            <div style={{
+              height: "100%", borderRadius: 3, width: `${correctPct}%`,
+              background: correctPct === 100 ? "var(--gradient-main)" : correctPct >= 60 ? "linear-gradient(90deg, var(--amber), var(--neon))" : "linear-gradient(90deg, var(--red), var(--amber))",
+              transition: "width 0.8s ease",
+            }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", letterSpacing: "0.1em", color: "var(--neon)" }}>
+              ✓ {correctPct}% CORRECT — {correctCount}/{total}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", letterSpacing: "0.1em", color: "var(--red)" }}>
+              ✗ {wrongPct}% WRONG — {total - correctCount}/{total}
+            </span>
+          </div>
+        </div>
+
         <div style={{
           fontFamily: "var(--font-mono)", fontSize: "0.75rem", letterSpacing: "0.12em",
           textTransform: "uppercase", color: "#777",
