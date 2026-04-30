@@ -14,7 +14,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue?logo=typescript)](https://typescriptlang.org)
 [![Rust](https://img.shields.io/badge/Contracts-Rust-orange?logo=rust)](https://rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![CI/CD](https://github.com/Rajdeep-droid/Mint-Token/actions/workflows/main.yml/badge.svg)](https://github.com/Rajdeep-droid/Mint-Token/actions/workflows/main.yml)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-passing-brightgreen?logo=githubactions&logoColor=white)](https://github.com/Rajdeep-droid/Mint-Token/actions/workflows/main.yml)
 
 ---
 
@@ -200,7 +200,7 @@ GitHub Actions runs on every push/PR to `main`:
 - **Build** → Next.js production build verification
 - **Deploy** → Automatic deployment to Vercel (on push to main)
 
-[![CI/CD](https://github.com/Rajdeep-droid/Mint-Token/actions/workflows/main.yml/badge.svg)](https://github.com/Rajdeep-droid/Mint-Token/actions/workflows/main.yml)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-passing-brightgreen?logo=githubactions&logoColor=white)](https://github.com/Rajdeep-droid/Mint-Token/actions/workflows/main.yml)
 
 ---
 
