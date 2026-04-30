@@ -23,7 +23,7 @@
   --font-body: 'Inter', 'Barlow Condensed', sans-serif;
   --font-mono: 'IBM Plex Mono', 'Space Mono', monospace;
   --gradient-main: linear-gradient(135deg, #00FF9F 0%, #00E5FF 50%, #B388FF 100%);
-  --gradient-dark: linear-gradient(180deg, #050510 0%, #0a0a1a 40%, #0d0d20 100%);
+  --gradient-dark: linear-gradient(180deg, #050510 0%, #070d2b 40%, #0a1645 100%);
   --gradient-card: linear-gradient(135deg, rgba(13,13,32,0.9) 0%, rgba(18,18,42,0.95) 100%);
   --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(0,255,159,0.06) 0%, transparent 60%);
   --glass-bg: rgba(13,13,32,0.7);

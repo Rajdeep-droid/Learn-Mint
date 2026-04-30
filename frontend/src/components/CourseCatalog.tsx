@@ -9,7 +9,7 @@ interface CourseCatalogProps {
 
 export default function CourseCatalog({ activeCourseId, onSelect }: CourseCatalogProps) {
   return (
-    <div style={{ padding: "0 44px 24px" }}>
+    <div style={{ padding: "0 24px 24px" }}>
       {/* Catalog Header */}
       <div style={{
         fontFamily: "var(--font-mono)", fontSize: "0.6rem", letterSpacing: "0.25em",
@@ -17,44 +17,55 @@ export default function CourseCatalog({ activeCourseId, onSelect }: CourseCatalo
         display: "flex", alignItems: "center", gap: 8,
       }}>
         <span style={{ width: 16, height: 2, background: "var(--gradient-main)", display: "inline-block", borderRadius: 1 }} />
-        COURSE CATALOG
+        EXPLORE COURSES
       </div>
 
-      {/* Grid of Courses */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-        gap: 20,
+      <style>{`
+        .course-scroll-vert::-webkit-scrollbar { width: 4px; }
+        .course-scroll-vert::-webkit-scrollbar-track { background: transparent; }
+        .course-scroll-vert::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+      `}</style>
+
+      {/* Vertical List */}
+      <div className="course-scroll-vert" style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        overflowY: "auto",
+        maxHeight: "calc(100vh - 120px)",
+        paddingRight: 8,
       }}>
         {COURSES.map((course) => {
           const isActive = course.id === activeCourseId;
-          const thumbUrl = `https://img.youtube.com/vi/${course.videoId}/maxresdefault.jpg`;
+          const thumbUrl = `https://img.youtube.com/vi/${course.videoId}/hqdefault.jpg`;
 
           return (
             <div
               key={course.id}
               onClick={() => onSelect(course.id)}
               style={{
+                width: "100%",
                 background: isActive ? "rgba(255,255,255,0.06)" : "var(--dim)",
                 border: isActive ? "1px solid var(--cyan)" : "1px solid rgba(255,255,255,0.06)",
                 borderRadius: 12,
                 overflow: "hidden",
                 cursor: "pointer",
-                transition: "all 0.2s ease",
+                transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
                 boxShadow: isActive ? "0 4px 24px rgba(0,229,255,0.15)" : "none",
                 display: "flex",
                 flexDirection: "column",
+                transform: isActive ? "scale(1.02)" : "scale(1)",
               }}
               onMouseEnter={e => {
                 if (!isActive) {
                   e.currentTarget.style.border = "1px solid rgba(255,255,255,0.15)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.transform = "scale(1.02) translateY(-2px)";
                 }
               }}
               onMouseLeave={e => {
                 if (!isActive) {
                   e.currentTarget.style.border = "1px solid rgba(255,255,255,0.06)";
-                  e.currentTarget.style.transform = "none";
+                  e.currentTarget.style.transform = "scale(1)";
                 }
               }}
             >
@@ -89,7 +100,7 @@ export default function CourseCatalog({ activeCourseId, onSelect }: CourseCatalo
               {/* Course Info */}
               <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
                 <h3 style={{
-                  fontFamily: "var(--font-display)", fontSize: "1.2rem", lineHeight: 1.1,
+                  fontFamily: "var(--font-display)", fontSize: "1.1rem", lineHeight: 1.1,
                   margin: 0, color: isActive ? "var(--white)" : "rgba(255,255,255,0.8)",
                 }}>
                   {course.title} <br />

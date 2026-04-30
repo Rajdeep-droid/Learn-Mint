@@ -43,6 +43,10 @@ export default function CourseView({ courseId = 0 }: { courseId?: number }) {
     } finally { setIsSubmitting(false); }
   }, [course]);
 
+  const handleQuizRetake = useCallback(() => {
+    setStage("watching");
+  }, []);
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {/* Course Header */}
@@ -138,7 +142,7 @@ export default function CourseView({ courseId = 0 }: { courseId?: number }) {
       {/* Quiz */}
       {(stage === "quiz" || stage === "completed") && (
         <QuizModule courseId={course.id} questions={course.questions}
-          onSubmit={handleQuizSubmit} isSubmitting={isSubmitting} />
+          onSubmit={handleQuizSubmit} isSubmitting={isSubmitting} onRetake={handleQuizRetake} />
       )}
     </div>
   );

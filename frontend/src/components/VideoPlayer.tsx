@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useVideoProgress } from "@/hooks/useVideoProgress";
 import { useWallet } from "@/context/WalletProvider";
 import { useToast } from "@/components/Toast";
@@ -41,14 +41,38 @@ export default function VideoPlayer({
   const { isConnected } = useWallet();
   const { showToast } = useToast();
   const playerRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(false);
   const [activeChapter, setActiveChapter] = useState(2);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Reset state when the course changes
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setShowControls(false);
+    setActiveChapter(0);
+  }, [courseId]);
 
   const togglePlay = useCallback(() => {
     setIsPlaying((prev) => !prev);
+  }, []);
+
+  const toggleFullScreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
   }, []);
 
   const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -64,6 +88,18 @@ export default function VideoPlayer({
 
   const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  if (!mounted) {
+    return (
+      <div className="video-section" style={{
+        padding: "32px 36px", background: "linear-gradient(180deg, var(--deep) 0%, var(--dim) 100%)",
+        display: "flex", gap: 20, alignItems: "stretch", minHeight: 520, borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        {/* Placeholder while mounting */}
+        <div style={{ width: 640, minWidth: 640, aspectRatio: "16/9", borderRadius: 16, background: "#0a0a1a" }} />
+      </div>
+    );
+  }
+
   return (
     <div className="video-section" style={{
       padding: "32px 36px",
@@ -74,89 +110,48 @@ export default function VideoPlayer({
     }}>
       {/* Glow orb behind video */}
       <div style={{
-        position: "absolute", top: "50%", left: 220, transform: "translateY(-50%)",
-        width: 340, height: 520,
+        position: "absolute", top: "50%", left: 100, transform: "translateY(-50%)",
+        width: 640, height: 360,
         background: "radial-gradient(ellipse, rgba(0,255,159,0.05) 0%, rgba(0,229,255,0.02) 40%, transparent 70%)",
         pointerEvents: "none", borderRadius: "50%",
       }} />
 
-      {/* 9:16 Video Player */}
+      {/* 16:9 Video Player */}
       <div
+        ref={containerRef}
         onMouseEnter={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
         style={{
-          position: "relative", width: 340, minWidth: 340, aspectRatio: "9/16",
+          position: "relative", width: 640, minWidth: 640, aspectRatio: "16/9",
           borderRadius: 16, background: "#0a0a1a", overflow: "hidden", flexShrink: 0,
           border: "1px solid rgba(255,255,255,0.1)",
           boxShadow: "0 0 60px rgba(0,255,159,0.08), 0 20px 60px rgba(0,0,0,0.5)",
         }}
       >
-        {isLocked ? (
-          <div style={{
-            width: "100%", height: "100%",
-            background: "linear-gradient(160deg, #0d0d20 0%, #050510 50%, #0a1a15 100%)",
-            display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 20,
-          }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: 6 }}>
-              LESSON 03 — TRANSACTIONS
-            </div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", letterSpacing: "0.06em", lineHeight: 1.1 }}>
-              THE STELLAR<br />LEDGER
-            </div>
-          </div>
-        ) : (
-          <div style={{ width: "100%", height: "100%", pointerEvents: "none" }}>
-            <Player
-              ref={playerRef}
-              url={videoUrl}
-              playing={isPlaying}
-              width="100%"
-              height="100%"
-              style={{ objectFit: "cover" }}
-              onProgress={(state: any) => { setCurrentTime(state.playedSeconds); onTimeUpdate(); }}
-              onDuration={(d: number) => setDuration(d)}
-              onEnded={() => { setIsPlaying(false); onEnded(); }}
-              controls={false}
-              config={{ youtube: { playerVars: { modestbranding: 1, rel: 0 } } } as any}
-            />
-          </div>
-        )}
-
-        {/* Click overlay to toggle play when clicking on the video */}
-        {!isLocked && (
-          <div style={{ position: "absolute", inset: 0, zIndex: 2, cursor: "pointer" }} onClick={togglePlay} />
-        )}
-
-        {/* Controls overlay */}
-        {!isLocked && (
-          <div style={{
-            position: "absolute", bottom: 0, left: 0, right: 0, padding: 14,
-            background: "linear-gradient(transparent, rgba(5,5,16,0.95))",
-            display: "flex", flexDirection: "column", gap: 8,
-            opacity: showControls ? 1 : 0, transition: "opacity 0.2s", zIndex: 5,
-          }}>
-            <div onClick={handleSeek} style={{
-              height: 3, background: "rgba(255,255,255,0.15)", cursor: "pointer",
-              borderRadius: 2, overflow: "hidden",
-            }}>
-              <div style={{ height: "100%", borderRadius: 2, background: "var(--gradient-main)", width: `${pct}%`, transition: "width 0.3s linear" }} />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button onClick={togglePlay} style={{ background: "none", border: "none", color: "var(--white)", cursor: "pointer", fontSize: "0.75rem", fontFamily: "var(--font-mono)" }}>
-                {isPlaying ? "❚❚" : "▶"}
-              </button>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.58rem", color: "rgba(255,255,255,0.5)", marginLeft: "auto" }}>
-                {fmt(currentTime)} / {fmt(duration)}
-              </span>
-            </div>
-          </div>
-        )}
+        <div style={{ width: "100%", height: "100%", opacity: isLocked ? 0 : 1, transition: "opacity 0.3s" }}>
+          <Player
+            ref={playerRef}
+            src={videoUrl}
+            playing={!isLocked && isPlaying}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            width="100%"
+            height="100%"
+            style={{ objectFit: "cover" }}
+            onProgress={(state: any) => { setCurrentTime(state.playedSeconds); onTimeUpdate(); }}
+            onDuration={(d: number) => setDuration(d)}
+            onEnded={() => { setIsPlaying(false); onEnded(); }}
+            controls={true}
+            config={{ youtube: { playerVars: { modestbranding: 1, rel: 0 } } } as any}
+          />
+        </div>
 
         {/* Lock overlay */}
         {isLocked && (
           <div style={{
-            position: "absolute", inset: 0, background: "rgba(5,5,16,0.8)",
-            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderRadius: 16,
+            position: "absolute", inset: 0,
+            background: "linear-gradient(160deg, rgba(13,13,32,0.95) 0%, rgba(5,5,16,0.95) 50%, rgba(10,26,21,0.95) 100%)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             display: "flex", flexDirection: "column", alignItems: "center",
             justifyContent: "center", gap: 16, zIndex: 20,
           }}>

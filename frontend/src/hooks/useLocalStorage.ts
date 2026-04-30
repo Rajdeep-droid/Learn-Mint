@@ -19,9 +19,11 @@ export function useLocalStorage<T>(
       const item = window.localStorage.getItem(key);
       if (item) {
         setStoredValue(JSON.parse(item));
+      } else {
+        setStoredValue(defaultValue);
       }
     } catch {
-      // localStorage unavailable or parse error
+      setStoredValue(defaultValue);
     }
     setHydrated(true);
   }, [key]);

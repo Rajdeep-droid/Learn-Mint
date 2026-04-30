@@ -74,14 +74,14 @@ export default function Home() {
 
   const handleConnect = async () => {
     if (isConnected) {
-      router.push("/dashboard");
+      router.push("/explore");
       return;
     }
     setConnecting(true);
     try {
       await connect();
       showToast("WALLET CONNECTED");
-      setTimeout(() => router.push("/dashboard"), 800);
+      setTimeout(() => router.push("/explore"), 800);
     } catch {
       /* handled in provider */
     } finally {
@@ -147,12 +147,12 @@ export default function Home() {
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,255,159,0.3)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,255,159,0.2)"; }}
             >
-              {isLoading || connecting ? "CONNECTING..." : isConnected ? "GO TO DASHBOARD" : "CONNECT WALLET"}
+              {isLoading || connecting ? "CONNECTING..." : isConnected ? "EXPLORE COURSES" : "CONNECT WALLET"}
               <IconArrow />
             </button>
 
             {!isConnected && (
-              <button onClick={() => router.push("/dashboard")}
+              <button onClick={() => router.push("/explore")}
                 style={{
                   fontFamily: "var(--font-mono)", fontSize: "0.82rem", fontWeight: 600,
                   letterSpacing: "0.12em", textTransform: "uppercase",
@@ -310,7 +310,7 @@ export default function Home() {
           onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = ""; }}
         >
-          {isConnected ? "OPEN DASHBOARD" : "GET STARTED"}
+          {isConnected ? "EXPLORE COURSES" : "GET STARTED"}
           <IconArrow />
         </button>
       </section>

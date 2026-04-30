@@ -3,10 +3,20 @@
 import { useState, useEffect } from "react";
 
 interface FeedEntry {
-  id: string; addr: string; course: string; action: string; time: string;
+  id: string; name: string; username: string; course: string; action: string; time: string;
 }
 
-const ADDRS = ["GAXF...C209","GBKL...1EFF","GC2D...9A3B","GDMN...A0C4","GEQR...2B5E","GFST...D9A7","GGVW...E312","GHXY...6C08","GIZZ...3D14"];
+const USERS = [
+  { name: "Alex Chen", username: "@alexc_dev" },
+  { name: "Sarah Jenkins", username: "@sarah_j" },
+  { name: "David Kim", username: "@dkim_builds" },
+  { name: "Elena Rodriguez", username: "@elena_crypto" },
+  { name: "Marcus Johnson", username: "@marcus_j" },
+  { name: "Nina Patel", username: "@nina_p" },
+  { name: "Tom Wilson", username: "@tom_w" },
+  { name: "Lisa Wong", username: "@lisa_w" },
+  { name: "James Smith", username: "@james_s" },
+];
 const COURSES = ["COURSE_01","COURSE_02","COURSE_03"];
 const ACTIONS = ["passed","completed","graduated from","earned NFT for"];
 const COLORS: Record<string, string> = { "passed": "var(--neon)", "completed": "var(--cyan)", "graduated from": "var(--purple)", "earned NFT for": "var(--amber)" };
@@ -17,7 +27,8 @@ function ts() {
 }
 function rand(): FeedEntry {
   const action = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
-  return { id: Math.random().toString(36).slice(2), addr: ADDRS[Math.floor(Math.random() * ADDRS.length)], course: COURSES[Math.floor(Math.random() * COURSES.length)], action, time: ts() };
+  const user = USERS[Math.floor(Math.random() * USERS.length)];
+  return { id: Math.random().toString(36).slice(2), name: user.name, username: user.username, course: COURSES[Math.floor(Math.random() * COURSES.length)], action, time: ts() };
 }
 
 export default function RecentGraduates() {
@@ -25,9 +36,9 @@ export default function RecentGraduates() {
 
   useEffect(() => {
     setEntries([
-      { id: "i1", addr: "GAXF...C209", course: "COURSE_01", action: "passed", time: ts() },
-      { id: "i2", addr: "GBKL...1EFF", course: "COURSE_02", action: "completed", time: ts() },
-      { id: "i3", addr: "GC2D...9A3B", course: "COURSE_01", action: "graduated from", time: ts() },
+      { id: "i1", name: "Alex Chen", username: "@alexc_dev", course: "COURSE_01", action: "passed", time: ts() },
+      { id: "i2", name: "Sarah Jenkins", username: "@sarah_j", course: "COURSE_02", action: "completed", time: ts() },
+      { id: "i3", name: "David Kim", username: "@dkim_builds", course: "COURSE_01", action: "graduated from", time: ts() },
     ]);
     let t: NodeJS.Timeout;
     function spawn() {
@@ -90,7 +101,8 @@ export default function RecentGraduates() {
           onMouseEnter={ev => { ev.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
           onMouseLeave={ev => { ev.currentTarget.style.background = "transparent"; }}
           >
-            <span style={{ color: "var(--cyan)", fontWeight: 600 }}>{e.addr}</span>{" "}
+            <span style={{ color: "var(--cyan)", fontWeight: 600 }}>{e.name}</span>{" "}
+            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.55rem" }}>{e.username}</span>{" "}
             <span style={{ color: "#555" }}>{e.action}</span>{" "}
             <span style={{ color: COLORS[e.action] || "var(--neon)", fontWeight: 600 }}>{e.course}</span>
             <span style={{ display: "block", fontSize: "0.5rem", color: "#444", marginTop: 2 }}>

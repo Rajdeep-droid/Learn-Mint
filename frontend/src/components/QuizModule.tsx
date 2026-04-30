@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuizState } from "@/hooks/useQuizState";
 import { useToast } from "@/components/Toast";
 
@@ -11,12 +11,13 @@ interface QuizModuleProps {
   questions: QuizQuestion[];
   onSubmit: (answers: number[]) => Promise<boolean>;
   isSubmitting?: boolean;
+  onRetake?: () => void;
 }
 
 const L = ["A", "B", "C", "D"];
 const COLORS = ["var(--neon)", "var(--cyan)", "var(--purple)", "var(--amber)"];
 
-export default function QuizModule({ courseId, questions, onSubmit, isSubmitting = false }: QuizModuleProps) {
+export default function QuizModule({ courseId, questions, onSubmit, isSubmitting = false, onRetake }: QuizModuleProps) {
   const { quizState, selectAnswer, nextQuestion, prevQuestion, markSubmitted, resetQuiz } = useQuizState(courseId);
   const { showToast } = useToast();
   const [shaking, setSh] = useState(false);
@@ -25,6 +26,14 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
   const answered = Object.keys(quizState.selectedAnswers).length;
   const allDone = answered === total;
   const isLast = quizState.currentQuestion === total - 1;
+
+  // Clear any stale submitted state when the quiz mounts fresh
+  useEffect(() => {
+    if (quizState.isSubmitted) {
+      resetQuiz();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId]);
 
   const handleSubmit = useCallback(async () => {
     const ans = Array.from({ length: total }, (_, i) => quizState.selectedAnswers[i] ?? -1);
@@ -56,7 +65,7 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
         }}>
           {passed ? "ALL CHECKS CLEARED — MINT YOUR CERTIFICATE" : "REVIEW AND TRY AGAIN"}
         </div>
-        <button onClick={passed ? () => showToast("MINTING ON-CHAIN...") : resetQuiz}
+        <button onClick={passed ? () => showToast("MINTING ON-CHAIN...") : () => { resetQuiz(); onRetake?.(); }}
           style={{
             marginTop: 20, fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: 700,
             letterSpacing: "0.12em", textTransform: "uppercase",

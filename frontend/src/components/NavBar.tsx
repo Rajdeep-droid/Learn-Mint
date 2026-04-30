@@ -34,6 +34,7 @@ export default function NavBar() {
 
   const NAV_LINKS = [
     { label: "HOME", path: "/", hoverBg: "rgba(0,255,159,0.12)", hoverBorder: "rgba(0,255,159,0.3)", hoverColor: "var(--neon)" },
+    { label: "EXPLORE", path: "/explore", hoverBg: "rgba(179,136,255,0.12)", hoverBorder: "rgba(179,136,255,0.3)", hoverColor: "var(--purple)" },
     { label: "DASHBOARD", path: "/dashboard", hoverBg: "rgba(0,229,255,0.12)", hoverBorder: "rgba(0,229,255,0.3)", hoverColor: "var(--cyan)" },
   ];
 
@@ -58,9 +59,9 @@ export default function NavBar() {
       <a href="/" onClick={e => { e.preventDefault(); router.push("/"); }}
         style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10, justifySelf: "start" }}>
         <img 
-          src="/logo.png" 
+          src="/logo.jpg" 
           alt="Learn Mint Logo" 
-          style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain" }} 
+          style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} 
         />
         <span style={{
           fontFamily: "var(--font-display)", fontSize: "1.8rem",
