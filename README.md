@@ -115,6 +115,9 @@ Web3 education today suffers from three critical issues:
 ### 9. PDF Certificate
 ![Certificate — Downloaded PDF certificate with user name, course title, and issue date](./screenshots/9-Certificate.png)
 
+### 10. Multi-Wallet Selection
+![Wallets — Multi-wallet modal supporting Freighter, xBull, Albedo, Rabet, Lobstr, Hana & more](./screenshots/10-wallets.png)
+
 ---
 
 ## ✨ Key Features
