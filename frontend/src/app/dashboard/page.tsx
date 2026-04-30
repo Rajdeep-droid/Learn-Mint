@@ -19,7 +19,7 @@ const RecentGraduates = dynamic(() => import("@/components/RecentGraduates"), {
 });
 
 function DashboardContent() {
-  const { isConnected } = useWallet();
+  const { isConnected, connect } = useWallet();
   const searchParams = useSearchParams();
   const initialCourseId = parseInt(searchParams.get("courseId") || "0");
   const [activeCourseId, setActiveCourseId] = useState(isNaN(initialCourseId) ? 0 : initialCourseId);
@@ -34,17 +34,25 @@ function DashboardContent() {
       {/* Access Denied Overlay */}
       {!isConnected && (
         <div style={{
-          position: "absolute", inset: 0, zIndex: 50,
+          position: "fixed", inset: 0, zIndex: 50,
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          background: "rgba(5,5,16,0.4)",
+          pointerEvents: "none",
         }}>
           <div style={{
             background: "var(--gradient-card)", border: "1px solid var(--red)",
-            padding: "40px 60px", borderRadius: 16, textAlign: "center",
+            padding: "48px 64px", borderRadius: 16, textAlign: "center",
             boxShadow: "0 20px 60px rgba(255,71,87,0.15)",
             backdropFilter: "blur(20px)",
+            pointerEvents: "auto",
+            marginBottom: 80,
           }}>
-            <div className="animate-float" style={{ fontSize: "3rem", marginBottom: 16 }}>🔒</div>
+            <div className="animate-float" style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+              </svg>
+            </div>
             <h2 style={{
               fontFamily: "var(--font-display)", fontSize: "2.5rem",
               letterSpacing: "0.06em", color: "var(--red)", lineHeight: 1.1,
@@ -52,10 +60,32 @@ function DashboardContent() {
             }}>ACCESS DENIED</h2>
             <p style={{
               fontFamily: "var(--font-mono)", fontSize: "0.8rem", color: "rgba(255,255,255,0.7)",
-              letterSpacing: "0.1em", textTransform: "uppercase",
+              letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 24,
             }}>
               Please connect your wallet to access the dashboard.
             </p>
+            <button
+              onClick={async () => { try { await connect(); } catch {} }}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: "0.78rem", fontWeight: 700,
+                letterSpacing: "0.12em", textTransform: "uppercase",
+                background: "var(--gradient-main)", backgroundSize: "200% 200%",
+                color: "var(--black)", border: "none", padding: "14px 36px",
+                borderRadius: 8, cursor: "pointer",
+                boxShadow: "0 4px 24px rgba(0,255,159,0.2)",
+                display: "inline-flex", alignItems: "center", gap: 10,
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,255,159,0.3)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,255,159,0.2)"; }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                <path d="M18 12a2 2 0 0 0 0 4h4v-4z" />
+              </svg>
+              CONNECT WALLET
+            </button>
           </div>
         </div>
       )}

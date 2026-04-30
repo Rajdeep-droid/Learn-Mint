@@ -67,10 +67,19 @@ async function signWithFreighter(xdr: string): Promise<string> {
   const result = await signTransaction(xdr, {
     networkPassphrase: "Test SDF Network ; September 2015",
   });
+  console.log("Freighter signTransaction result:", result);
   if ("error" in result) {
-    throw new Error(result.error);
+    const errMsg = typeof result.error === "string"
+      ? result.error
+      : (result.error as any)?.message || JSON.stringify(result.error);
+    throw new Error(errMsg || "User declined the transaction");
   }
-  return result.signedTxXdr;
+  // Handle different response shapes from various Freighter versions
+  const signed = (result as any).signedTxXdr || (result as any).xdr || (typeof result === "string" ? result : "");
+  if (!signed) {
+    throw new Error("No signed transaction returned from wallet");
+  }
+  return signed;
 }
 
 // ── Provider Component ───────────────────────────────────────────────────

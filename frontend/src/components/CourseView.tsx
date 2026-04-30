@@ -11,22 +11,79 @@ type CourseStage = "locked" | "watching" | "quiz" | "completed";
 
 export default function CourseView({ courseId = 0 }: { courseId?: number }) {
   const course = COURSES.find(c => c.id === courseId) || COURSES[0];
-  const { isConnected } = useWallet();
+  const { isConnected, address, signTransaction, refreshBalance } = useWallet();
   const { showToast } = useToast();
   const [stage, setStage] = useState<CourseStage>("locked");
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleUnlock = useCallback(async () => {
-    if (!isConnected) { showToast("CONNECT WALLET FIRST"); return; }
+    if (!isConnected || !address) { showToast("CONNECT WALLET FIRST"); return; }
     setIsUnlocking(true);
     try {
-      await new Promise((r) => setTimeout(r, 1800));
+      // Import Stellar SDK modules
+      const { TransactionBuilder, Operation, Asset, Networks } = await import("@stellar/stellar-sdk");
+      const { HORIZON_URL } = await import("@/lib/stellar");
+
+      // A burn address to send the 1 XLM unlock fee to
+      const PLATFORM_ADDRESS = "GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN7";
+
+      // 1. Load the user's account from Horizon
+      const accountRes = await fetch(`${HORIZON_URL}/accounts/${address}`);
+      if (!accountRes.ok) throw new Error("Account not found on testnet. Fund it first.");
+      const accountData = await accountRes.json();
+
+      // 2. Build a 1 XLM payment transaction
+      const tx = new TransactionBuilder(
+        { accountId: () => address, sequenceNumber: () => accountData.sequence, incrementSequenceNumber: () => {} } as any,
+        {
+          fee: "100",
+          networkPassphrase: Networks.TESTNET,
+        }
+      )
+        .addOperation(
+          Operation.payment({
+            destination: PLATFORM_ADDRESS,
+            asset: Asset.native(),
+            amount: "1",
+          })
+        )
+        .setTimeout(60)
+        .build();
+
+      // 3. Send to Freighter for signing (this triggers the wallet popup!)
+      showToast("APPROVE IN WALLET...");
+      const signedXdr = await signTransaction(tx.toXDR());
+
+      // 4. Submit the signed transaction to Horizon
+      showToast("SUBMITTING TX...");
+      const submitRes = await fetch(`${HORIZON_URL}/transactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `tx=${encodeURIComponent(signedXdr)}`,
+      });
+
+      const submitData = await submitRes.json();
+      if (!submitRes.ok) {
+        throw new Error(submitData?.extras?.result_codes?.transaction || "Transaction rejected");
+      }
+
+      // 5. Success!
       setStage("watching");
-      showToast("COURSE UNLOCKED — TX CONFIRMED");
-    } catch { showToast("UNLOCK FAILED"); }
-    finally { setIsUnlocking(false); }
-  }, [isConnected, showToast]);
+      showToast("COURSE UNLOCKED — TX CONFIRMED ✓");
+      refreshBalance();
+    } catch (err: any) {
+      const msg = err?.message || "UNLOCK FAILED";
+      if (msg.includes("User declined") || msg.includes("rejected") || msg.includes("cancel")) {
+        showToast("TRANSACTION CANCELLED");
+      } else {
+        showToast(msg.length > 40 ? "UNLOCK FAILED — CHECK CONSOLE" : msg.toUpperCase());
+        console.error("Unlock error:", err);
+      }
+    } finally {
+      setIsUnlocking(false);
+    }
+  }, [isConnected, address, signTransaction, showToast, refreshBalance]);
 
   // Reset stage when course changes
   useEffect(() => {
