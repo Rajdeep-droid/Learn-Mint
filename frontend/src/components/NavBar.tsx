@@ -40,6 +40,7 @@ export default function NavBar() {
 
   return (
     <nav
+      className="mobile-p-y"
       style={{
         position: "sticky",
         top: 0,
@@ -48,11 +49,13 @@ export default function NavBar() {
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        display: "grid",
-        gridTemplateColumns: "1fr auto 1fr",
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
         alignItems: "center",
-        padding: "0 28px",
-        height: 60,
+        padding: "10px 28px",
+        minHeight: 60,
+        gap: 16,
       }}
     >
       {/* Left — Logo */}
@@ -73,7 +76,7 @@ export default function NavBar() {
       </a>
 
       {/* Center — Nav links */}
-      <div style={{ display: "flex", gap: 6, justifySelf: "center" }}>
+      <div className="mobile-nav-links" style={{ display: "flex", gap: 6 }}>
         {NAV_LINKS.map(link => {
           const active = pathname === link.path;
           return (

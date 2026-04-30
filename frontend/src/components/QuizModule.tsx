@@ -12,12 +12,13 @@ interface QuizModuleProps {
   onSubmit: (answers: number[]) => Promise<boolean>;
   isSubmitting?: boolean;
   onRetake?: () => void;
+  onMintClick?: () => void;
 }
 
 const L = ["A", "B", "C", "D"];
 const COLORS = ["var(--neon)", "var(--cyan)", "var(--purple)", "var(--amber)"];
 
-export default function QuizModule({ courseId, questions, onSubmit, isSubmitting = false, onRetake }: QuizModuleProps) {
+export default function QuizModule({ courseId, questions, onSubmit, isSubmitting = false, onRetake, onMintClick }: QuizModuleProps) {
   const { quizState, selectAnswer, nextQuestion, prevQuestion, markSubmitted, resetQuiz } = useQuizState(courseId);
   const { showToast } = useToast();
   const [shaking, setSh] = useState(false);
@@ -56,7 +57,7 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
     const wrongPct = 100 - correctPct;
 
     return (
-      <div style={{ padding: "48px 44px", background: "var(--gradient-glow), var(--dim)" }} className="animate-slideIn">
+      <div style={{ padding: "48px 44px", background: "var(--gradient-glow), var(--dim)" }} className="animate-slideIn mobile-p">
         <div style={{
           fontFamily: "var(--font-display)", fontSize: "clamp(3.5rem, 7vw, 7rem)",
           letterSpacing: "0.04em", lineHeight: 0.85,
@@ -100,7 +101,7 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
         }}>
           {passed ? "ALL CHECKS CLEARED — MINT YOUR CERTIFICATE" : "REVIEW AND TRY AGAIN"}
         </div>
-        <button onClick={passed ? () => showToast("MINTING ON-CHAIN...") : () => { resetQuiz(); onRetake?.(); }}
+        <button onClick={passed ? () => onMintClick?.() : () => { resetQuiz(); onRetake?.(); }}
           style={{
             marginTop: 20, fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: 700,
             letterSpacing: "0.12em", textTransform: "uppercase",
@@ -121,10 +122,11 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
   return (
     <div className={shaking ? "animate-shake" : ""}>
       {/* Header */}
-      <div style={{
+      <div className="mobile-p" style={{
         padding: "24px 44px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)",
         background: "var(--gradient-glow), var(--dim)",
         display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16,
+        flexWrap: "wrap",
       }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.8rem, 3vw, 2.8rem)", letterSpacing: "0.06em", lineHeight: 1 }}>
           KNOWLEDGE CHECK
@@ -144,7 +146,7 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
       </div>
 
       {/* Body */}
-      <div style={{ padding: "36px 44px 44px", minHeight: 300 }} className="animate-slideIn" key={quizState.currentQuestion}>
+      <div style={{ padding: "36px 44px 44px", minHeight: 300 }} className="animate-slideIn mobile-p" key={quizState.currentQuestion}>
         <div style={{
           fontFamily: "var(--font-mono)", fontSize: "0.6rem", letterSpacing: "0.25em",
           textTransform: "uppercase", marginBottom: 14,
@@ -198,9 +200,9 @@ export default function QuizModule({ courseId, questions, onSubmit, isSubmitting
       </div>
 
       {/* Footer */}
-      <div style={{
+      <div className="mobile-p mobile-wrap" style={{
         padding: "16px 44px", borderTop: "1px solid rgba(255,255,255,0.06)",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
       }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "#555" }}>
           <span className="text-gradient">{answered}</span>/{total} ANSWERED
