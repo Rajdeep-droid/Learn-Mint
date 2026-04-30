@@ -74,12 +74,9 @@ export function useQuizState(courseId: number) {
         isSubmitted: true,
         isPassed: passed,
       }));
-      // Clear state on success so user can't re-see answers
-      if (passed) {
-        setTimeout(() => clearQuizState(), 5000);
-      }
+      // We no longer auto-clear state, so the user has time to mint their certificate
     },
-    [setQuizState, clearQuizState]
+    [setQuizState]
   );
 
   const resetQuiz = useCallback(() => {

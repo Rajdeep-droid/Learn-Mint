@@ -95,7 +95,7 @@ export default function VideoPlayer({
         display: "flex", gap: 20, alignItems: "stretch", minHeight: 520, borderBottom: "1px solid rgba(255,255,255,0.06)",
       }}>
         {/* Placeholder while mounting */}
-        <div style={{ width: 640, minWidth: 640, aspectRatio: "16/9", borderRadius: 16, background: "#0a0a1a" }} />
+        <div style={{ width: "100%", maxWidth: 640, aspectRatio: "16/9", borderRadius: 16, background: "#0a0a1a" }} />
       </div>
     );
   }
@@ -109,7 +109,7 @@ export default function VideoPlayer({
       borderBottom: "1px solid rgba(255,255,255,0.06)",
     }}>
       {/* Glow orb behind video */}
-      <div style={{
+      <div className="mobile-hide" style={{
         position: "absolute", top: "50%", left: 100, transform: "translateY(-50%)",
         width: 640, height: 360,
         background: "radial-gradient(ellipse, rgba(0,255,159,0.05) 0%, rgba(0,229,255,0.02) 40%, transparent 70%)",
@@ -122,7 +122,7 @@ export default function VideoPlayer({
         onMouseEnter={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
         style={{
-          position: "relative", width: 640, minWidth: 640, aspectRatio: "16/9",
+          position: "relative", width: "100%", maxWidth: 640, aspectRatio: "16/9",
           borderRadius: 16, background: "#0a0a1a", overflow: "hidden", flexShrink: 0,
           border: "1px solid rgba(255,255,255,0.1)",
           boxShadow: "0 0 60px rgba(0,255,159,0.08), 0 20px 60px rgba(0,0,0,0.5)",
